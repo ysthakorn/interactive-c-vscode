@@ -209,6 +209,26 @@ int knob()
     return _raw_analog(7);
 }
 
+int analog(int port)
+{
+    return _raw_analog(port);
+}
+
+int digital(int port)
+{
+    if (port < 7)
+        return analog(port) < 128;
+    if (port == 7)
+        return !(peek(0x1000) & 1);
+    if (port == 8)
+        return !(peek(0x1000) & 2);
+    if (port == 9)
+        return !(peek(0x1000) & 128);
+    if (port < 16)
+        return !((peek(0x7fff) >> (port - 10)) & 1);
+    return -1;
+}
+
 
 /****************************/
 /*** INEX SENSOR MODULES  ***/

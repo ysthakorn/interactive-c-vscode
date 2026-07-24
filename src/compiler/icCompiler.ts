@@ -21,7 +21,7 @@ export interface CompileResult {
 }
 
 /**
- * ICCompiler wraps the ic.exe CLI compiler.
+ * ICCompiler wraps the ic.exe CLI compiler using its interactive REPL command pipe.
  */
 export class ICCompiler {
     private outputChannel: vscode.OutputChannel;
@@ -36,9 +36,6 @@ export class ICCompiler {
         this.context.subscriptions.push(this.outputChannel);
     }
 
-    /**
-     * Resolves the compiler executable path.
-     */
     private getCompilerPath(): string {
         const config = vscode.workspace.getConfiguration('ic');
         const customPath = config.get<string>('icPath');
@@ -51,7 +48,6 @@ export class ICCompiler {
     /**
      * Compiles the specified file or current active file.
      * @param filePath Optional file path.
-     * @returns A promise resolving to the compilation result.
      */
     public async compile(filePath?: string): Promise<CompileResult> {
         let targetFile = filePath;
@@ -67,16 +63,17 @@ export class ICCompiler {
             return { success: false, output: 'No file selected.', errors: [] };
         }
 
+        const currentBoard = this.boardManager.getCurrentBoard() || 'ax11';
+        const iclibPath = path.join(this.context.extensionPath, 'resources', 'lib', currentBoard, 'iclib.txt');
+
         this.outputChannel.clear();
         this.outputChannel.show(true);
         this.outputChannel.appendLine(`=========================================`);
         this.outputChannel.appendLine(`Compiling: ${path.basename(targetFile)}`);
-        this.outputChannel.appendLine(`Target Board: ${this.boardManager.getCurrentBoard() || 'ax11'}`);
+        this.outputChannel.appendLine(`Target Board Profile: ${currentBoard.toUpperCase()} (${iclibPath})`);
         this.outputChannel.appendLine(`=========================================\n`);
 
         const compilerPath = this.getCompilerPath();
-        const currentBoard = this.boardManager.getCurrentBoard() || 'ax11';
-        const libDir = path.join(this.context.extensionPath, 'resources', 'lib', currentBoard);
 
         return new Promise((resolve) => {
             if (!fs.existsSync(compilerPath)) {
@@ -88,11 +85,15 @@ export class ICCompiler {
                 return;
             }
 
-            // Spawn compiler: ic.exe -l <libdir> <filepath>
-            const args = ['-l', libDir, targetFile!];
-            this.outputChannel.appendLine(`Running: ${compilerPath} ${args.join(' ')}\n`);
+            // Interactive C 5 CLI expects pipe input:
+            // settings <iclibPath>
+            // userfile <targetFile>
+            // compile
+            // q
+            const cleanIclib = iclibPath.replace(/\\/g, '/');
+            const cleanTarget = targetFile!.replace(/\\/g, '/');
 
-            const child = spawn(compilerPath, args, { cwd: path.dirname(targetFile!) });
+            const child = spawn(compilerPath, [], { cwd: path.dirname(iclibPath) });
 
             let stdoutStr = '';
             let stderrStr = '';
@@ -109,30 +110,24 @@ export class ICCompiler {
                 this.outputChannel.append(text);
             });
 
+            // Write CLI commands to ic.exe stdin
+            child.stdin.write(`settings ${cleanIclib}\n`);
+            child.stdin.write(`userfile ${cleanTarget}\n`);
+            child.stdin.write(`compile\n`);
+            child.stdin.write(`q\n`);
+            child.stdin.end();
+
             child.on('close', (code) => {
                 const combinedOutput = (stdoutStr + '\n' + stderrStr).trim();
-                let errors = this.parseErrors(combinedOutput, targetFile!);
-
-                if (code !== 0 && errors.length === 0) {
-                    // Fallback error if process exited non-zero but no regex line match
-                    const summaryMsg = combinedOutput || `Compiler process exited with code ${code}`;
-                    errors.push({
-                        file: targetFile!,
-                        line: 1,
-                        column: 1,
-                        message: summaryMsg,
-                        severity: 'error'
-                    });
-                }
-
-                const isSuccess = code === 0 && errors.filter(e => e.severity === 'error').length === 0;
+                const errors = this.parseErrors(combinedOutput, targetFile!);
+                const isSuccess = combinedOutput.includes('IC: Compile success') && errors.length === 0;
 
                 this.diagnosticsProvider.updateDiagnostics(errors);
 
                 if (isSuccess) {
-                    this.outputChannel.appendLine('\n[Success] Compilation finished cleanly!');
+                    this.outputChannel.appendLine('\n🎉 [Success] IC Compilation finished cleanly!');
                 } else {
-                    this.outputChannel.appendLine(`\n[Failed] Compilation finished with ${errors.length} error(s).`);
+                    this.outputChannel.appendLine(`\n❌ [Failed] Compilation finished with ${errors.length} error(s).`);
                 }
 
                 resolve({
@@ -143,7 +138,7 @@ export class ICCompiler {
             });
 
             child.on('error', (err) => {
-                const errMsg = `Failed to start compiler executable: ${err.message}`;
+                const errMsg = `Failed to execute compiler: ${err.message}`;
                 this.outputChannel.appendLine(`\n[Error] ${errMsg}`);
                 const compileErr: CompileError = {
                     file: targetFile!,
@@ -173,27 +168,26 @@ export class ICCompiler {
             const trimmed = line.trim();
             if (!trimmed) continue;
 
-            // Pattern 1: "file.ic:15: error: syntax error"
-            const match1 = /^(.*?):(\d+)(?::(\d+))?:\s*(error|warning|fatal error)?\s*(.*)$/i.exec(trimmed);
+            // Pattern: "CompilerError: file.ic : line 12 : Error : message"
+            const match1 = /^CompilerError:\s*(.*?)\s*:\s*line\s*(\d+)\s*:\s*(Error|Warning)?\s*:\s*(.*)$/i.exec(trimmed);
             if (match1) {
                 errors.push({
                     file: match1[1].trim() || currentFile,
                     line: parseInt(match1[2], 10) || 1,
-                    column: match1[3] ? parseInt(match1[3], 10) : 1,
-                    message: match1[5] ? match1[5].trim() : trimmed,
-                    severity: (match1[4] && match1[4].toLowerCase().includes('warning')) ? 'warning' : 'error'
+                    column: 1,
+                    message: match1[4] ? match1[4].trim() : trimmed,
+                    severity: (match1[3] && match1[3].toLowerCase().includes('warning')) ? 'warning' : 'error'
                 });
                 continue;
             }
 
-            // Pattern 2: "Line 15: Error message"
-            const match2 = /^line\s+(\d+):\s*(.*)$/i.exec(trimmed);
-            if (match2) {
+            // Generic Error pattern: "Error: message"
+            if (trimmed.startsWith('Error:') && !trimmed.includes('Compiler command')) {
                 errors.push({
                     file: currentFile,
-                    line: parseInt(match2[1], 10) || 1,
+                    line: 1,
                     column: 1,
-                    message: match2[2].trim(),
+                    message: trimmed.replace('Error:', '').trim(),
                     severity: 'error'
                 });
             }
