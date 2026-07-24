@@ -13,8 +13,9 @@ export class FirmwareDownloader {
         const boardConfig = this.boardManager.getBoardConfig();
         const boardName = this.boardManager.getCurrentBoard() || 'unknown';
         
-        if (!boardConfig.firmwarePath || !fs.existsSync(boardConfig.firmwarePath)) {
-            vscode.window.showErrorMessage(`Firmware file not found for ${boardName}. Expected at: ${boardConfig.firmwarePath}`);
+        const firmwarePath = boardConfig.firmwarePath;
+        if (!firmwarePath || !fs.existsSync(firmwarePath)) {
+            vscode.window.showErrorMessage(`Firmware file not found for ${boardName}. Expected at: ${firmwarePath}`);
             return;
         }
 
@@ -39,7 +40,7 @@ export class FirmwareDownloader {
                 
                 try {
                     // Read the file
-                    const firmwareBuffer = fs.readFileSync(boardConfig.firmwarePath);
+                    const firmwareBuffer = fs.readFileSync(firmwarePath);
                     
                     progress.report({ increment: 20, message: 'Initiating transfer...' });
                     

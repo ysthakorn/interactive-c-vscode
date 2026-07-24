@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ICCompletionProvider } from './language/completionProvider';
+import { ICCompletionItemProvider } from './language/completionProvider';
 import { ICHoverProvider } from './language/hoverProvider';
 import { BoardManager } from './board/boardManager';
 import { SerialManager } from './serial/serialManager';
@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Language Providers (.ic)
     context.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider('ic', new ICCompletionProvider(), '.')
+        vscode.languages.registerCompletionItemProvider('ic', new ICCompletionItemProvider(), '.')
     );
     context.subscriptions.push(
         vscode.languages.registerHoverProvider('ic', new ICHoverProvider())
@@ -65,7 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('ic.openTerminal', () => {
-        const pty = new ICTerminal(serialManager);
+        const pty = new ICTerminal();
         const terminal = vscode.window.createTerminal({ name: 'IC Terminal', pty });
         terminal.show();
     }));
