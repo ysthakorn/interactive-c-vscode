@@ -60,9 +60,25 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ic.compile', async (uri?: vscode.Uri) => {
             const result = await compiler.compile(uri?.fsPath);
             if (result.success) {
-                vscode.window.showInformationMessage('Compilation successful!');
+                vscode.window.showInformationMessage('✅ Compilation successful!', 'Download to Board', 'Open Terminal').then(choice => {
+                    if (choice === 'Download to Board') {
+                        vscode.commands.executeCommand('ic.download');
+                    } else if (choice === 'Open Terminal') {
+                        vscode.commands.executeCommand('ic.openTerminal');
+                    }
+                });
             } else {
-                vscode.window.showErrorMessage(`Compilation failed with ${result.errors.length} error(s). Check Output channel for details.`);
+                const choice = await vscode.window.showErrorMessage(
+                    `❌ Compilation failed with ${result.errors.length} error(s).`,
+                    'Connect to Board', 'Firmware Wizard', 'View Output Log'
+                );
+                if (choice === 'Connect to Board') {
+                    vscode.commands.executeCommand('ic.connect');
+                } else if (choice === 'Firmware Wizard') {
+                    vscode.commands.executeCommand('ic.firmwareWizard');
+                } else if (choice === 'View Output Log') {
+                    vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+                }
             }
         })
     );
