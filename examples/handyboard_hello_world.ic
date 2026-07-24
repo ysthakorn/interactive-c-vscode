@@ -1,0 +1,22 @@
+// ==========================================================
+// Handy Board v1.2 — Hello World Test Program
+// Interactive C (IC) for Handy Board 68HC11
+// ==========================================================
+
+void main()
+{
+    printf("Hello World!\n");
+    beep();
+    sleep(1.0);
+    
+    printf("Press START...\n");
+    start_press();
+    
+    while (!stop_button()) {
+        printf("Hello World!\nKnob: %d\n", knob());
+        sleep(0.3);
+    }
+    
+    printf("Goodbye!\n");
+    beep();
+}

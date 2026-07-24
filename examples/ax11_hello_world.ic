@@ -1,0 +1,30 @@
+// ==========================================================
+// AX-11 Activity Board (INEX) — Hello World Test Program
+// Interactive C (IC) for AX-11 Board
+// ==========================================================
+
+void main()
+{
+    // 1. แสดงข้อความ "Hello World!" บนหน้าจอ LCD 16x2
+    printf("Hello World!\n");
+    
+    // 2. ส่งเสียง BEEP เตือน 1 ครั้ง
+    beep();
+    
+    // 3. หน่วงเวลา 1.5 วินาที
+    sleep(1.5);
+    
+    // 4. รอการกดปุ่ม START บนบอร์ด AX-11
+    printf("Press START...\n");
+    start_press();
+    
+    // 5. เมื่อกดปุ่ม START ให้แสดงเวลาที่ทำงานนับตั้งแต่เปิดบอร์ด
+    while (!stop_button()) {
+        printf("Hello World!\nTime: %.1f sec\n", seconds());
+        sleep(0.5);
+    }
+    
+    // 6. เมื่อกดปุ่ม STOP ให้ปิดการทำงาน
+    printf("Program Stopped\n");
+    beep();
+}

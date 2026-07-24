@@ -1,0 +1,13 @@
+// ==========================================================
+// LEGO Mindstorms RCX — Hello World Test Program
+// Interactive C (IC) for LEGO RCX (H8/300)
+// ==========================================================
+
+void main()
+{
+    printf("Hello World!\n");
+    beep();
+    sleep(2.0);
+    
+    printf("RCX Ready!\n");
+}
