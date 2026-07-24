@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { EventEmitter } from 'vscode';
+import { SerialManager } from '../serial/serialManager';
 
 /**
- * ICTerminal provides an interactive pseudo-terminal for the Interactive C environment.
+ * ICTerminal provides an interactive pseudo-terminal C shell for the Interactive C environment.
  */
 export class ICTerminal implements vscode.Pseudoterminal {
     private writeEmitter = new EventEmitter<string>();
@@ -14,28 +15,32 @@ export class ICTerminal implements vscode.Pseudoterminal {
     private currentLine = '';
     private history: string[] = [];
     private historyIndex = -1;
-    private isConnected = false;
 
-    constructor() {}
+    constructor(private serialManager?: SerialManager) {}
 
     /**
      * Called when the terminal is opened.
      */
     open(initialDimensions: vscode.TerminalDimensions | undefined): void {
-        this.writeEmitter.fire('Interactive C Terminal — Type C statements to execute on board\r\n');
+        this.writeEmitter.fire('\x1b[1;36m=====================================================\r\n');
+        this.writeEmitter.fire('  Interactive C (IC5) Interactive Shell\r\n');
+        this.writeEmitter.fire('  Type any C statement (e.g. printf("Hello!\\n");, beep();, fd(0);)\r\n');
+        this.writeEmitter.fire('  Type :help for terminal commands\r\n');
+        this.writeEmitter.fire('=====================================================\x1b[0m\r\n\r\n');
+
+        if (this.serialManager && this.serialManager.isPortConnected()) {
+            this.writeEmitter.fire(`\x1b[32m[Status]: Connected to ${this.serialManager.getSelectedPort()} ⚡\x1b[0m\r\n\r\n`);
+        } else {
+            this.writeEmitter.fire('\x1b[33m[Status]: Offline / Simulation Mode (Type statements to test locally)\x1b[0m\r\n\r\n');
+        }
+
         this.prompt();
     }
 
-    /**
-     * Called when the terminal is closed.
-     */
-    close(): void {
-        // Cleanup if necessary
-    }
+    close(): void {}
 
     /**
      * Handles incoming keystrokes and data from the user.
-     * @param data The input data string.
      */
     handleInput(data: string): void {
         // Handle enter key
@@ -54,11 +59,10 @@ export class ICTerminal implements vscode.Pseudoterminal {
         }
 
         // Handle backspace
-        if (data === '\x7f') {
+        if (data === '\x7f' || data === '\b') {
             if (this.currentLine.length > 0) {
                 this.currentLine = this.currentLine.slice(0, -1);
-                // Move cursor back, clear to end of line
-                this.writeEmitter.fire('\x1b[D\x1b[K');
+                this.writeEmitter.fire('\b \b');
             }
             return;
         }
@@ -84,129 +88,118 @@ export class ICTerminal implements vscode.Pseudoterminal {
             return;
         }
 
-        // Handle normal characters
+        // Handle normal printable characters
         if (data >= ' ' && data <= '~') {
             this.currentLine += data;
             this.writeEmitter.fire(data);
         }
     }
 
-    /**
-     * Replaces the current line visually in the terminal and updates the buffer.
-     * @param newLine The line content to set.
-     */
     private replaceCurrentLine(newLine: string): void {
-        // Clear current line using ANSI escape sequences
-        const clearSequence = '\x1b[2K\x1b[G';
+        const clearSequence = '\r\x1b[K';
         this.writeEmitter.fire(clearSequence);
         this.prompt();
         this.currentLine = newLine;
         this.writeEmitter.fire(newLine);
     }
 
-    /**
-     * Prints the prompt.
-     */
     private prompt(): void {
-        this.writeEmitter.fire('IC> ');
+        this.writeEmitter.fire('\x1b[1;33mIC> \x1b[0m');
     }
 
-    /**
-     * Processes a submitted command.
-     * @param command The command text.
-     */
     private processCommand(command: string): void {
         if (command.startsWith(':')) {
             this.handleSpecialCommand(command);
         } else {
-            this.sendToBoard(command);
+            this.executeCStatement(command);
         }
     }
 
-    /**
-     * Handles special terminal commands prefixed with ':'.
-     * @param command The full command.
-     */
     private handleSpecialCommand(command: string): void {
-        const parts = command.split(' ');
-        const cmd = parts[0];
+        const cmd = command.split(' ')[0];
 
         switch (cmd) {
             case ':help':
-                this.writeEmitter.fire('Available commands:\r\n');
-                this.writeEmitter.fire('  :help       - Show this help\r\n');
-                this.writeEmitter.fire('  :clear      - Clear the terminal screen\r\n');
-                this.writeEmitter.fire('  :history    - Show command history\r\n');
-                this.writeEmitter.fire('  :connect    - Connect to board\r\n');
-                this.writeEmitter.fire('  :disconnect - Disconnect from board\r\n');
+                this.writeEmitter.fire('\r\nAvailable Commands:\r\n');
+                this.writeEmitter.fire('  printf("Hello!\\n");   - Print text to console/screen\r\n');
+                this.writeEmitter.fire('  beep();              - Play alert beep\r\n');
+                this.writeEmitter.fire('  fd(0); / bk(0);      - Run motor 0 forward/backward\r\n');
+                this.writeEmitter.fire('  off(0); / ao();      - Stop motor 0 / all motors\r\n');
+                this.writeEmitter.fire('  analog(2);           - Read analog sensor channel 2\r\n');
+                this.writeEmitter.fire('  servo(0, 180);       - Move servo 0 to 180 deg\r\n');
+                this.writeEmitter.fire('  :connect             - Connect to serial port\r\n');
+                this.writeEmitter.fire('  :clear               - Clear terminal screen\r\n');
+                this.writeEmitter.fire('  :history             - View history\r\n\r\n');
                 break;
             case ':clear':
-                // Clear screen sequence
                 this.writeEmitter.fire('\x1b[2J\x1b[3J\x1b[;H');
                 break;
             case ':history':
+                this.writeEmitter.fire('\r\nCommand History:\r\n');
                 this.history.forEach((cmdItem, i) => {
                     this.writeEmitter.fire(`  ${i + 1}: ${cmdItem}\r\n`);
                 });
+                this.writeEmitter.fire('\r\n');
                 break;
             case ':connect':
-                this.isConnected = true;
-                this.writeEmitter.fire('Connected to board.\r\n');
-                break;
-            case ':disconnect':
-                this.isConnected = false;
-                this.writeEmitter.fire('Disconnected from board.\r\n');
+                vscode.commands.executeCommand('ic.connect');
                 break;
             default:
-                this.writeEmitter.fire(`Unknown special command: ${cmd}\r\n`);
+                this.writeEmitter.fire(`\r\nUnknown special command: ${cmd}. Type :help for list.\r\n\r\n`);
                 break;
         }
         this.prompt();
     }
 
     /**
-     * Sends the command to the Interactive C board via serial.
-     * @param command The C statement to execute.
+     * Evaluates C statements interactively (Local Simulation or Serial Transmission)
      */
-    private sendToBoard(command: string): void {
-        if (!this.isConnected) {
-            this.writeEmitter.fire('Not connected to board. Use IC: Connect command or :connect.\r\n');
+    private executeCStatement(statement: string): void {
+        if (this.serialManager && this.serialManager.isPortConnected()) {
+            this.serialManager.send(statement);
+            this.writeEmitter.fire(`\x1b[32m[Sent to Board]: ${statement}\x1b[0m\r\n`);
             this.prompt();
             return;
         }
 
-        // Simulate sending to board
-        this.writeEmitter.fire(`Sending: ${command}\r\n`);
-        
-        // Mocking received output delay
-        setTimeout(() => {
-            this.receiveOutput('Executed successfully\r\n');
-            this.prompt();
-        }, 500);
-    }
+        // Local Interactive Shell Evaluation (Simulated IC Shell)
+        const clean = statement.replace(/;$/, '').trim();
 
-    /**
-     * Receives and displays output from the board.
-     * @param output The text received from the board.
-     */
-    public receiveOutput(output: string): void {
-        this.writeEmitter.fire(`[Board]: ${output}`);
-    }
+        if (/^printf\s*\(\s*"(.*?)"\s*(?:,\s*(.*))?\)$/i.test(clean)) {
+            const match = /^printf\s*\(\s*"(.*?)"\s*(?:,\s*(.*))?\)$/i.exec(clean);
+            let text = match ? match[1] : '';
+            text = text.replace(/\\n/g, '\r\n');
+            this.writeEmitter.fire(`\x1b[1;32m${text}\x1b[0m`);
+            if (!text.endsWith('\r\n')) {
+                this.writeEmitter.fire('\r\n');
+            }
+        } else if (/^beep\s*\(\s*\)$/i.test(clean)) {
+            this.writeEmitter.fire('\x1b[1;35m🔊 BEEP! (500Hz, 0.1s)\x1b[0m\r\n');
+        } else if (/^fd\s*\(\s*(\d+)\s*\)$/i.test(clean)) {
+            const m = /^fd\s*\(\s*(\d+)\s*\)$/i.exec(clean)![1];
+            this.writeEmitter.fire(`\x1b[1;36m⚙️ Motor ${m}: FORWARD (100% Speed)\x1b[0m\r\n`);
+        } else if (/^bk\s*\(\s*(\d+)\s*\)$/i.test(clean)) {
+            const m = /^bk\s*\(\s*(\d+)\s*\)$/i.exec(clean)![1];
+            this.writeEmitter.fire(`\x1b[1;36m⚙️ Motor ${m}: BACKWARD (100% Speed)\x1b[0m\r\n`);
+        } else if (/^off\s*\(\s*(\d+)\s*\)$/i.test(clean)) {
+            const m = /^off\s*\(\s*(\d+)\s*\)$/i.exec(clean)![1];
+            this.writeEmitter.fire(`\x1b[1;31m⏹️ Motor ${m}: OFF\x1b[0m\r\n`);
+        } else if (/^(ao|alloff)\s*\(\s*\)$/i.test(clean)) {
+            this.writeEmitter.fire('\x1b[1;31m⏹️ All Motors: OFF\x1b[0m\r\n');
+        } else if (/^analog\s*\(\s*(\d+)\s*\)$/i.test(clean)) {
+            const ch = /^analog\s*\(\s*(\d+)\s*\)$/i.exec(clean)![1];
+            const val = Math.floor(Math.random() * 128) + 120;
+            this.writeEmitter.fire(`\x1b[1;33m[Analog AI-${ch}]: ${val}\x1b[0m\r\n`);
+        } else if (/^digital\s*\(\s*(\d+)\s*\)$/i.test(clean)) {
+            const ch = /^digital\s*\(\s*(\d+)\s*\)$/i.exec(clean)![1];
+            this.writeEmitter.fire(`\x1b[1;33m[Digital DI-${ch}]: 1 (HIGH)\x1b[0m\r\n`);
+        } else if (/^servo\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/i.test(clean)) {
+            const parts = /^servo\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/i.exec(clean)!;
+            this.writeEmitter.fire(`\x1b[1;34m🔄 Servo Port ${parts[1]} -> Position ${parts[2]}\x1b[0m\r\n`);
+        } else {
+            this.writeEmitter.fire(`\x1b[36m[IC Shell Executed]: ${clean}\x1b[0m\r\n`);
+        }
 
-    /**
-     * Registers the terminal profile provider with VS Code.
-     * @param context The extension context.
-     */
-    public static register(context: vscode.ExtensionContext): void {
-        context.subscriptions.push(
-            vscode.window.registerTerminalProfileProvider('ic.terminal', {
-                provideTerminalProfile(token: vscode.CancellationToken): vscode.ProviderResult<vscode.TerminalProfile> {
-                    return new vscode.TerminalProfile({
-                        name: 'Interactive C',
-                        pty: new ICTerminal()
-                    });
-                }
-            })
-        );
+        this.prompt();
     }
 }

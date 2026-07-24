@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('ic.openTerminal', () => {
-            const pty = new ICTerminal();
+            const pty = new ICTerminal(serialManager);
             const terminal = vscode.window.createTerminal({ name: 'IC Terminal', pty });
             terminal.show();
         })
