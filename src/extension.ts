@@ -96,6 +96,12 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('ic.pingBoard', () => {
+            serialManager.connect();
+        })
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('ic.disconnect', () => {
             serialManager.disconnect();
         })

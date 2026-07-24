@@ -74,6 +74,11 @@
         "icon": "$(plug)"
       },
       {
+        "command": "ic.pingBoard",
+        "title": "IC: Ping Board / Check Board Connection",
+        "icon": "$(radio-tower)"
+      },
+      {
         "command": "ic.disconnect",
         "title": "IC: Disconnect from Board",
         "icon": "$(debug-disconnect)"
