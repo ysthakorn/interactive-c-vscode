@@ -1,0 +1,129 @@
+// RCX calibrate.ic
+// For Botball 2003, use botball.ic instead
+// This file is for Botball 2002 and before
+
+/* Calibrartion and timing routines for Botball programs
+   (c) D.P.Miller, 2002, KISS Institute for Practical Robotics
+
+   using the routines in this library, a Botball main routine would
+   look something like:
+   void main()
+   {
+      hb_calibrate();
+      play_time(90,start_process(my_botball_program()));
+      printf("Did I win?\n");
+   }
+
+   
+   The function hb_calibrate takes an integer arguement specifying
+   the analog port containing the light sensor being used to start
+   the robot.  The routine then prints instructions on the HB LCD.
+
+   The expected sequence is:
+   1) Turn on start light and call this function
+   2) Press start button
+   3) Turn off start light
+   4) press stop button
+
+   At this point the routine will either give a happy message, play a constant
+   buzz sound and waiti for the light to come back on (whereupon the function
+   returns) OR it will give a sad message with a recommendation, play a klaxon
+   tone sequence and hang -- forcing the HB to be reset.
+   
+*/
+
+void rcx_calibrate(int light_port_)
+{
+    int l_on_, l_off_, l_mid_, l_diff_, t;
+    
+    /* print statements may look funny but are spaced for LCD*/
+    printf ("Cal#%d", light_port_);
+    sleep(2.);
+    
+    printf("On V");
+    while(!view_button());
+    l_on_=light_passive(light_port_); /*sensor value when light is on*/
+    beep();
+    
+    printf("On%d", l_on_);
+    sleep(1.);
+    beep();
+    
+    printf("Off P");
+    while(!prgm_button());
+    l_off_=light_passive(light_port_); /*sensor value when light is off*/
+    beep();
+    
+    printf("Of%d", l_off_);
+    sleep(1.);
+    beep();
+    
+    if((l_off_-l_on_)>=15){ /*bright = small values */
+        l_mid_=(l_on_+l_off_)/2;
+        l_diff_=(l_off_-l_on_);
+        printf("Good",l_diff_);
+        while(light_passive(light_port_)>l_mid_){ 
+            tone(440.,0.4);
+            printf("good");
+            if(light_passive(light_port_)>l_mid_)tone(440.,0.4);
+            printf("D=%d",l_diff_);
+        }
+    }
+    else{
+        if(l_off_<450){
+            printf("Bad");
+            while(1) /*never terminate */
+              for(t=100; t<10000; t=t+1200) {
+                  printf("Bad");
+                  tone((float)t,0.5);
+                  printf("ADD");
+                  tone((float)(400+t),0.5);
+                  printf("Shield");
+                  tone((float)(800+t),0.5);
+              }
+        }
+        else{
+            printf("Bad Calibration Aim sensor!!\n");
+            while(1) /*never terminate */
+              for(t=10000; t>200; t=t-1200) {
+                  printf("Bad");
+                  tone((float)t,0.5);
+                  printf("point");
+                  tone((float)(t-400),0.5);
+                  printf("Sensor");
+                  tone((float)(t-800),0.5);
+              }
+        }
+    }
+}
+
+
+/* The routine play_time takes an integer argument representing the amount 
+   of time to run a process, and a start_process call (or is pid) to terminate
+   at the end of that time, e.g.: play_time(90,start_process(play_botball()));
+
+   The global integer Bb_Game_Over is true when the game is over and false
+   otherwise.  It may be used as a flag to signal other processes
+*/
+
+int Bb_Game_Over=0; /* global flag*/
+
+void play_time(int play_time_, int play_pid_)
+{
+    int i;
+    
+    Bb_Game_Over=0;
+    
+    for(i=play_time_; i>=10; i=i-10){
+        printf("T=%d\n",i);
+        sleep(10.);
+    }
+    if(i>0){
+        printf("T=%d\n",i);
+        sleep((float)i);
+    }
+    kill_process(play_pid_);
+    ao();
+    Bb_Game_Over=1;
+}
+

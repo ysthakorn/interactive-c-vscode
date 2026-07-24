@@ -1,0 +1,247 @@
+/////////////////////
+//  RESERVED WORDS //
+/////////////////////
+
+// KEYWORD #define
+
+// KEYWORD #else
+
+// KEYWORD #endif
+
+// KEYWORD #error
+
+// KEYWORD #if
+
+// KEYWORD #if
+
+// KEYWORD #ifdef
+
+// KEYWORD break
+
+// KEYWORD char
+
+// KEYWORD continue
+
+// KEYWORD else
+
+// KEYWORD float
+
+// KEYWORD for
+// for (initial; condition; aftereach) { body; }
+// For loop.
+
+// KEYWORD if
+// if (condition) { body1; } else { body2; }
+// If condition is true (non-zero), execute body1.
+// Otherwise execute body2 (optional)
+
+// KEYWORD int
+
+// KEYWORD long
+
+// KEYWORD persistent
+
+// KEYWORD return
+
+// KEYWORD struct
+
+// KEYWORD typedef
+
+// KEYWORD union
+
+// KEYWORD void
+
+// KEYWORD while
+// while (condition) { body; }
+// Loop while condition is true (non-zero)
+
+
+///////////////////////////////////////
+// Functions (builtin and otherwise) //
+///////////////////////////////////////
+
+// DOC A
+// A
+// Motor A (1)
+
+// DOC B
+// B
+// Motor B (2)
+
+// DOC C
+// C
+// Motor C (3)
+
+// DOC allbrake
+// allbrake()
+// Puts all motors in brake mode
+
+// DOC alloff
+// alloff()
+// Turns all motors off
+
+// DOC ao
+// ao()
+// Turns all motors off
+
+// DOC battery_volts
+// float battery_volts()
+// Returns battery voltage
+
+// DOC beep
+// beep()
+// Makes a quick beep
+
+// DOC beeper_off
+// beeper_off()
+// Turns the beeper off (use with beeper_on and set_beeper_pitch)
+
+// DOC beeper_on
+// beeper_on()
+// Turns the beeper on (call set_beeper_pitch first)
+
+// DOC bk
+// bk(int: motor A-C)
+// Turns motor on in "backwards" direction
+
+// DOC brake
+// brake(int: motor A-C)
+// Puts motor in brake mode
+
+// DOC defer
+// defer()
+// Switches to another process now
+
+// DOC digital
+// int digital(int: sensor 1-3)
+// Returns 1 for touch sensor pressed, 0 for not pressed
+
+// DOC enable_encoder
+// int enable_encoder(int: sensor 1-3)
+// Increments that encode for each transition between high & low
+
+// DOC disable_encoder
+// int disable_encoder(int: sensor 1-3)
+// Turns off that encoder
+
+// DOC read_encoder
+// int read_encoder(int: sensor 1-3)
+// Returns the current value of that encoder
+
+// DOC reset_encoder
+// int reset_encoder(int: sensor 1-3)
+// Sets the value of that encoder to 0
+
+// DOC half_enable_encoder
+// int half_enable_encoder(int: sensor 1-3)
+// Encoder will increment after full up down cycle
+
+// DOC enable_bidir_encoder
+// int enable_bidir_encoder(int: sensor 1-3)
+// Turns on quadrature encoder (lego rotation sensor only)
+
+// DOC encoderwhite
+// int encoderwhite(int: sensor 1-3)
+// Calibrates bright value for light encoder
+
+// DOC encoderblack
+// int encoderblack(int: sensor 1-3)
+// Calibrates dark value for light encoder
+
+// DOC fd
+// void fd(int: motor A-C)
+// Turns motor on in "forwards" direction
+
+// DOC hog_processor
+// hog_processor()
+// Keeps from switching to another process
+
+// DOC kill_process
+// kill_process(int: pid)
+// Kills process # pid (pid is returned by start_process)
+
+// DOC light
+// int light(int: sensor 1-3)
+// Returns value of light sensor in powered mode (0-1023)
+
+// DOC light_passive
+// int light_passive(int: sensor 1-3)
+// Returns value of light sensor in unpowered mode (0-1023)
+
+// DOC motor
+// motor(int: motor A-C, int: speed -100 to 100)
+// Turns motor on at given speed
+
+// DOC mseconds
+// long mseconds()
+// Returns the number of milliseconds since the board was reset
+
+// DOC msleep
+// msleep(long: duration in milliseconds)
+// Waits for given duration
+
+// DOC off
+// off(int: motor 0-3)
+// Turns motor off
+
+// DOC poweroff
+// void poweroff()
+// Turns the RCX off
+
+// DOC pressure
+// void pressure(int: sensor)
+// Returns 0 to 1024 depending on pressure on touch sensor
+
+// DOC prgm_button
+// int prgm_button()
+// Returns 1 if Prgm button pressed, 0 if not
+
+// DOC printf
+// printf(string: "format", args...)
+// Prints to the LCD.  Examples:
+// printf("Hello");
+// printf("%d\n", light(1));
+
+// DOC reset_system_time
+// reset_system_time()
+// Resets the system time to 0
+
+// DOC set_beeper_pitch
+// set_beeper_pitch(float: frequency)
+// Sets the beeper pitch (use with beeper_on and beeper_off)
+
+// DOC setticks
+// setticks(int: ticks)
+// Sets the number of millisecond ticks to give the current process (1-255)
+
+// DOC sleep
+// sleep(float: duration in seconds)
+// Waits for given duration
+
+// DOC sqrt
+// float sqrt(float)
+// Square root
+
+// DOC start_button
+// int start_button()
+// Returns 1 if View button pressed, 0 if not
+
+// DOC start_process
+// int start_process(function call)
+// Starts a new process
+
+// DOC stop_button
+// int stop_button()
+// Returns 1 if Prgm button pressed, 0 if not
+
+// DOC tone
+// tone(float: frequency, float: duration in seconds)
+// Makes a tone
+
+// DOC touch
+// int touch(int: sensor 1-3)
+// Returns 1 if touch sensor pressed, 0 if not
+
+// DOC view_button
+// int view_button()
+// Returns 1 if View button pressed, 0 if not

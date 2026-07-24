@@ -1,0 +1,46 @@
+<HTML>
+<HEAD><TITLE>AX-11 Firmware Download Guide</TITLE></HEAD>
+<BODY>
+<H2>AX-11 Activity Board — Firmware Download</H2>
+<TABLE BORDER=1><TR><TD>
+<B>Step 1:</B> Connect your AX-11 board to the computer using a serial cable (RS-232) or USB-to-Serial adapter.<BR><BR>
+Make sure the serial cable is securely connected to both the AX-11 board and the computer's serial port.<BR>
+If using a USB-to-Serial adapter, ensure the driver is installed and the correct COM port is selected.<BR><BR>
+</TD></TR></TABLE>
+
+<TABLE BORDER=1><TR><TD>
+<B>Step 2:</B> Click on the "Communication Check" button and see if the serial light on the board blinks.<BR><BR>
+If it does not blink, there is probably either a problem with the serial connection, or the wrong serial port
+has been chosen.<BR>
+Check all serial connections, ensure that you've chosen the correct serial port, and try again.<BR><BR>
+</TD></TR></TABLE>
+
+<TABLE BORDER=1><TR><TD>
+<B>Step 3:</B> Make sure the AX-11 board is switched OFF.<BR><BR>
+Slide the power switch to the OFF position before proceeding.<BR><BR>
+</TD></TR></TABLE>
+
+<TABLE BORDER=1><TR><TD>
+<B>Step 4:</B> While holding the <B>STOP</B> button, turn the power ON.<BR><BR>
+Keep the <B>STOP</B> button pressed for at least two seconds after power is turned on.<BR>
+This puts the board into bootstrap/download mode.<BR><BR>
+</TD></TR></TABLE>
+
+<TABLE BORDER=1><TR><TD>
+<B>Step 5:</B> Both the <FONT COLOR=#F00>RED</FONT> <B>BATT</B> and <FONT COLOR=#0F0>GREEN</FONT> <B>PWR</B> lights should be off (after shining momentarily).<BR><BR>
+<UL>
+<LI>If the <FONT COLOR=#F00>BATT</FONT> light stays on, your battery is too low. Turn off and charge for 30 minutes.
+<LI>If the <FONT COLOR=#0F0>PWR</FONT> light stays on, the board did not enter download mode. Go back to Step 3 and try again.
+</UL>
+<BR>
+If both lights are off, click the <B>Download Firmware</B> button to begin downloading.<BR><BR>
+</TD></TR></TABLE>
+
+<TABLE BORDER=1><TR><TD>
+<B>Step 6:</B> Wait for the firmware download to complete.<BR><BR>
+Do NOT disconnect the cable or turn off the board during download.<BR>
+The progress bar will show the download status.<BR>
+When complete, turn the board OFF and then ON again to start using the new firmware.<BR><BR>
+</TD></TR></TABLE>
+</BODY>
+</HTML>

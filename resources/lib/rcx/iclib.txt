@@ -1,0 +1,17 @@
+hardware=Lego RCX 
+commtype=RCX
+picfile=lib_rcx.gif
+libfile=lib_rcx.ic
+inffile=lib_rcx.inf
+frmfile=lib_rcx.frm
+instfile=firmware.html
+simfile=lib_rcx_sim.ic
+diagram=diagram.jpg
+comtest=0
+analog=1,2,3
+digital=-1
+nummotors=3
+numservos=0
+maxvalue=255
+button=View,d,28727
+button=Prgm,d,28728

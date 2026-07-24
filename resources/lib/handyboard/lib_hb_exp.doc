@@ -1,0 +1,317 @@
+/////////////////////
+//  RESERVED WORDS //
+/////////////////////
+
+// KEYWORD #define
+
+// KEYWORD #else
+
+// KEYWORD #endif
+
+// KEYWORD #error
+
+// KEYWORD #if
+
+// KEYWORD #if
+
+// KEYWORD #ifdef
+
+// KEYWORD break
+
+// KEYWORD char
+
+// KEYWORD continue
+
+// KEYWORD else
+
+// KEYWORD float
+
+// KEYWORD for
+// for (initial; condition; aftereach) { body; }
+// For loop.
+
+// KEYWORD if
+// if (condition) { body1; } else { body2; }
+// If condition is true (non-zero), execute body1.
+// Otherwise execute body2 (optional)
+
+// KEYWORD int
+
+// KEYWORD long
+
+// KEYWORD persistent
+
+// KEYWORD return
+
+// KEYWORD struct
+
+// KEYWORD typedef
+
+// KEYWORD union
+
+// KEYWORD void
+
+// KEYWORD while
+// while (condition) { body; }
+// Loop while condition is true (non-zero)
+
+
+///////////////////////////////////////
+// Functions (builtin and otherwise) //
+///////////////////////////////////////
+
+// DOC alloff
+// alloff()
+// Turns motors 0-3 off
+
+// DOC analog
+// int analog(int: channel)
+// Reads analog sensor, returns 0-255
+
+// DOC ao
+// ao()
+// Turns motors 0-3 off
+
+// DOC atan
+// float atan(float)
+// Arctangent (in radians)
+
+// DOC beep
+// beep()
+// Makes a quick beep
+
+// DOC beeper_off
+// beeper_off()
+// Turns the beeper off (use with beeper_on and set_beeper_pitch)
+
+// DOC beeper_on
+// beeper_on()
+// Turns the beeper on (call set_beeper_pitch first)
+
+// DOC bk
+// bk(int: motor 0-3)
+// Turns motor on in "backwards" direction
+
+// DOC clamp_camera_yuv
+// clamp_camera_yuv ()
+// Performs white balance script for CMUcam
+
+// DOC clear_digital_out
+// clear_digital_out(int: channel)
+// Sets expansion board digital output to logic low
+
+// DOC cos
+// float cos(float: angle)
+// Cosine of angle (radians)
+
+// DOC defer
+// defer()
+// Switches to another process now
+
+// DOC digital
+// int digital(int)
+// Reads digital sensor.  1 for button pressed, 0 for not pressed
+
+// DOC disable_encoder
+// disable_encoder(int: channel 0-3)
+// Disables encoder channel
+
+// DOC enable_encoder
+// enable_encoder(int: channel 0-3)
+// Enables encoder channel
+
+// DOC exp10
+// float exp10(float: x)
+// Returns 10 to the power of x
+
+// DOC exp
+// float exp(float: x)
+// Returns e to the power of x
+
+// DOC fd
+// fd(int: motor 0-3)
+// Turns motor on in "forwards" direction
+
+// DOC hog_processor
+// hog_processor()
+// Keeps from switching to another process
+
+// DOC init_camera
+// init_camera()
+// Enables CMUcam in YUV mode and checks comm
+
+// DOC init_expbd_servos
+// init_expbd_servos(int action)
+// Enables expansion board servos if action is 1,
+// disables if 0
+
+// DOC kill_process
+// kill_process(int: pid)
+// Kills process # pid (pid is returned by start_process)
+
+// DOC knob
+// int knob()
+// Current position of knob, 0 to 255
+
+// DOC log10
+// float log10(float: x)
+// Returns the log (base 10) of x
+
+// DOC log
+// float log(float)
+// Returns the log (base e) of x
+
+// DOC motor
+// motor(int: motor 0 to 3, int: speed -100 to 100)
+// Turns motor on at given speed
+
+// DOC mseconds
+// long mseconds()
+// Returns the number of milliseconds since the board was reset
+
+// DOC msleep
+// msleep(long: duration in milliseconds)
+// Waits for given duration
+
+// DOC off
+// off(int: motor 0-3)
+// Turns motor off
+
+// DOC printf
+// printf(string: "format", args...)
+// Prints to the LCD.  Examples:
+// printf("Hello\n");
+// printf("analog(3) is %d\n", analog(3));
+
+// DOC random
+// int random(int)
+// Returns a random number between 0 and num-1, inclusive
+
+// DOC read_encoder
+// int read_encoder(int: channel 0-3)
+// Gives the number of counts for encoder (must call enable_encoder)
+
+// DOC reset_encoder
+// reset_encoder(int: channel 0-3)
+// Resets count for encoder
+
+// DOC reset_system_time
+// reset_system_time()
+// Resets the system time to 0
+
+// DOC seconds
+// float seconds()
+// Returns the number of seconds since the board was reset
+
+// DOC servo0
+// int servo0
+// Set this variable to control servo 0 (must call init_expbd_servos first)
+
+// DOC servo1
+// int servo1
+// Set this variable to control servo 1 (must call init_expbd_servos first)
+
+// DOC servo2
+// int servo2
+// Set this variable to control servo 2 (must call init_expbd_servos first)
+
+// DOC servo3
+// int servo3
+// Set this variable to control servo 3 (must call init_expbd_servos first)
+
+// DOC servo4
+// int servo4
+// Set this variable to control servo 4 (must call init_expbd_servos first)
+
+// DOC servo5
+// int servo5
+// Set this variable to control servo 5 (must call init_expbd_servos first)
+
+// DOC set_beeper_pitch
+// set_beeper_pitch(float: frequency)
+// Sets the beeper pitch (use with beeper_on and beeper_off)
+
+// DOC set_digital_out
+// int set_digital_out(int)
+// Sets expansion board digital output to logic high
+
+// DOC sin
+// float sin(float: angle)
+// Sine of angle (radians)
+
+// DOC sleep
+// sleep(float: duration in seconds)
+// Waits for given duration
+
+// DOC sonar
+// int sonar()
+// Fires sonar and reports approximate distance in
+// millimeters.  32767 means no echo detected.
+
+// DOC sqrt
+// float sqrt(float)
+// Square root
+
+// DOC start_button
+// int start_button()
+// Returns 1 if start button pressed, 0 if not
+
+// DOC start_press
+// start_press()
+// Waits for start button to be pressed
+
+// DOC start_process
+// int start_process(function call)
+// Starts a new process
+
+// DOC stop_button
+// int stop_button()
+// Returns 1 if stop button pressed, 0 if not
+
+// DOC stop_press
+// stop_press()
+// Waits for stop button to be pressed
+
+// DOC tan
+// float tan(float: angle)
+// Tangent of angle (radians)
+
+// DOC test_digital_out
+// int test_digital_out(int: channel)
+// Returns the last commanded state of the expansion board digital output
+
+// DOC tone
+// tone(float: frequency, float: duration in seconds)
+// Makes a tone
+
+// DOC track_orange
+// track_orange()
+// Sets track_ globals vars with camera trained to orange
+
+// DOC track_blue
+// track_blue()
+// Sets track_ globals vars with camera trained to blue
+
+// DOC trackRaw
+// trackRaw (int: rmin, rmax, gmin, gmax, bmin, bmax)
+// CMUcam tracks color defined by parameters
+
+// DOC track_size
+// int track_size
+// Is # of pixels in image of color being tracked
+
+// DOC track_x
+// int track_x
+// Is X coordinate of centroid of tracked color (-40,40)
+
+// DOC track_y
+// int track_y
+// Is X coordinate of centroid of tracked color (-71,71)
+
+// DOC track_area
+// int track_area
+// Size of bounding box of color being tracked
+
+// DOC track_confidence
+// int track_confidence
+// Confidence of color being tracked

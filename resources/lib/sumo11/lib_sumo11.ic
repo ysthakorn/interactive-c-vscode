@@ -1,0 +1,9 @@
+// Libraries for Sumo11 board
+// Dan Gates, April 29, 2003
+// Brings in all Sumo11 board functions
+
+#use "lib_s11.ic"
+#use "lib_dig_out.icb"
+#use "lib_sens.ic"
+#use "lib_servo.icb"
+#use "encoders.ic"

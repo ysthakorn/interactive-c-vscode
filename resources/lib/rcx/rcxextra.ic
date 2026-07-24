@@ -1,0 +1,76 @@
+/* RCX advanced library */
+
+
+/* COMMUNICATION */
+
+void IRLong(){               /* Long range IR*/
+        callml(0,0x11);
+
+}
+
+void IRShort(){                 /* short range IR */
+        callml(0,0x12);
+}
+
+
+
+void disableirpackets(){     /* disables interpretation of packets.  This is necessary to be able to recieve serial characters in a program */
+        callml(1,0x16);
+}
+
+
+void enableirpackets(){      /* reenables packet reception/transmission */
+        callml(0,0x16); 
+}
+
+
+int ready(){                   /* 1 for character is ready, 0 for no character */
+        return callml(0,0x17);
+
+}
+
+
+
+int irget(){                    /* returns a character from the recieve buffer, or -1 if there is no character */
+
+
+    if (ready())  return callml(0,0x18);
+    else return -1;
+
+}
+
+void irsend(int c){             /* send serial character */
+        callml( c, 0x19);
+}
+
+
+/* buttons */
+
+void buttoncommandsoff(){   /* required for using on/off and run buttons in a program. Also useful to keep a robot from accidently turning itself off during a game */
+
+  callml(1,0x13);
+
+}
+
+void buttoncommandson(){    /* reenables buttons */
+
+  callml(0,0x13);
+
+}
+
+
+int run(){                  
+
+        if ( callml(0,0x0a) & 1 ) return 1; else return 0;
+
+}
+
+
+int onoff(){
+
+        if ( callml(0,0x0a) & 8 ) return 1; else return 0;
+
+}
+
+
+

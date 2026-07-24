@@ -1,0 +1,89 @@
+/*
+ * Sensor ports
+ * Up to 64 ports
+ * Stores in 0x7000-0x7063
+ */
+
+int sim_sensor(int port)
+{
+    if(port >= 32)
+      {
+        printf("Sensor port out of range\n");
+        beep();
+        return -1;
+    }
+    return (peek(0x7000 + port));
+}
+
+/*
+ * Motor ports
+ * Up to 32 ports
+ * Stored in 0x7064-0x7095
+ */
+void sim_motor(int motor, int speed, int min_motor, int max_motor)
+{
+    if(motor >= 32 || motor < 0 || motor > max_motor || motor < min_motor)
+      {
+        printf("Motor port out of range\n");
+        beep();
+        return;
+    }
+    if(speed > 100) speed = 100;
+    else if (speed < -100) speed = -100; 
+      poke(0x7064+motor, speed);
+}
+
+void sim_alloff(int motor_limit)
+{
+    int i;
+    for(i = 0; i < motor_limit; ++i)
+      {
+        poke(0x7064+i, 0);
+    }
+}
+
+void beeper_on()
+{           
+}
+
+void beeper_off()
+{          
+}
+
+void set_beeper_pitch(float x)
+{
+}
+
+void tone(float pitch, float duration)
+{
+}
+
+void beep()
+{
+}
+
+float seconds()
+{
+    return ((float) mseconds()) / 1000.;
+}
+
+void sleep(float seconds)
+{
+    msleep((long)(seconds * 1000.));
+}
+
+void msleep(long msec)
+{
+    long end_time= mseconds() + msec;
+
+    while (1) {
+	/* if the following test doesn't execute at least once a second,
+	   msleep may not halt */
+	long done= mseconds()-end_time;
+	if (done >= 0L && done <= 1000L) break;
+    }
+}
+
+void hog_processor()
+{
+}

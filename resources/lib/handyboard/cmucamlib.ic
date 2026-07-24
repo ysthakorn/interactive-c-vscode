@@ -1,0 +1,96 @@
+#use "cmucam3.ic"
+#define cmu_WAIT 40L
+
+// Adapted from code by Paul Rybski
+// Simplified API for Botball by Randy Sargent 7/30/2002
+// Reorganized data output and raw data commands by Jim Peterson 8/06/02
+// Standardized interface by David Miller 1/5/03
+
+// IMPORTANT NOTE!!!!!!!
+// Using this library REQUIRES that you hold down the start_button on the HB
+// when you turn it on, if you are going to download an ic file from IC4. Do not hold
+// down the start button if you are trying to load the pcode or just trying
+// to run your program.  IC4 will not be able to communicate with your board
+// unless you turn on the HB with the start button down, once this library has
+// been loaded.  Restarting IC or loading a main file that does not use this
+// library, will remove this requirement
+
+// How to use this library:
+// AA
+// Put the line:
+// use "cmucamlib.ic"
+// as the first line in your file.
+
+// A 
+// Initialize the camera - this only needs to be done once:
+// init_camera();
+
+// B
+// Set the white balance by pointing the camera at a white surface
+// under the lighting conditions you are going to track things and call:
+// clamp_camera_yuv();
+// be patient. this takes 15 seconds!
+
+// C
+// call track_blue() or track_orange to see if the camera sees the
+// blue marker paper or sees the orange poof ball. just use the one
+// you need in any particular condition. each function returns 0 if
+// there was a comm error or no blob, or returns a positive number
+// which is confidence if a blob was found.  A good blob has a 
+// confidence in the high double-digits or in the triple digits.
+// If you are tracking something successfully, find its position and
+// size using track_x, track_y, track_size, etc.
+
+//
+// see the comments for the file CMUCAM3.ic for more low-level functions
+
+// this special function returns 0 if it fails to find a blue object, or
+// else a positive number denoting the confidence of the blob it has found.
+// In this case track_x, track_y, track_size, etc... have all the useful data
+// This function is designed to be used AFTER you have clamped white balance
+// and specifically is meant for the blue corner-mark paper
+// Note that we find blue paper by looking in CrYCb space for a blob in which
+// Cb is bigger or as big as Cr and where their two values are middle-of-the-road
+int track_blue()
+{
+    int rbedge;
+    for (rbedge = 120; rbedge > 99; rbedge = rbedge - 10) {
+        if (trackRaw(100, rbedge, 40, 120, rbedge, 240) > 0) {
+            return track_confidence;
+        }
+    }
+    return 0;        
+} // end track_blue() //
+
+// this special function returns 0 if it fails to find an orange object, or
+// else a positive number denoting the confidence of the blob it has found.
+// In this case track_x, track_y, track_size, etc... have all the useful data
+// This function is designed to work *after* you have clamped white balance 
+// and specifically is meant for the orange poof ball
+// Note that we find orange Poof ball by looking for areas with very high
+// Cr (in CrYCb space) and *extremely* small Cb (virtually nil)
+int track_orange()
+{
+    int crmin;
+    if (trackRaw(180,240,20,150,16,18) > 0) {
+        return track_confidence;
+    } else return 0;
+} // end track_orange() //
+
+
+// this clamps gain and white balance and stops them with
+// the camera in YUV mode
+int clamp_camera_yuv()
+{
+    int i;
+    printf("Point at white  and press start\n"); 
+    while (!start_button());
+    send_R_command_require_reply("CR 18 36\r",9);
+    for (i= 15; i > 0; i--) {
+        printf("Setting white   balance %d..\n", i);
+        sleep(1.0);
+    }
+    send_R_command_require_reply("CR 18 32\r",9);
+    printf("Done\n");
+} // clamp_camera_yuv() //
+

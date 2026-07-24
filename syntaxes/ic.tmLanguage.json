@@ -1,0 +1,324 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Interactive C",
+  "scopeName": "source.ic",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#preprocessor"
+    },
+    {
+      "include": "#storage_modifiers"
+    },
+    {
+      "include": "#storage_types"
+    },
+    {
+      "include": "#control_keywords"
+    },
+    {
+      "include": "#operator_keywords"
+    },
+    {
+      "include": "#builtin_functions"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#function_calls"
+    },
+    {
+      "include": "#identifiers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.ic",
+          "begin": "//",
+          "end": "$",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.ic"
+            }
+          }
+        },
+        {
+          "name": "comment.block.ic",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.ic"
+            }
+          }
+        }
+      ]
+    },
+    "preprocessor": {
+      "patterns": [
+        {
+          "name": "meta.preprocessor.use.ic",
+          "begin": "^\\s*(#\\s*use)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.directive.use.ic"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.preprocessor.include.ic",
+          "begin": "^\\s*(#\\s*include)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.directive.include.ic"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#strings"
+            },
+            {
+              "name": "string.quoted.other.lt-gt.include.ic",
+              "begin": "<",
+              "end": ">"
+            },
+            {
+              "include": "#comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.preprocessor.directive.ic",
+          "begin": "^\\s*(#\\s*(?:define|undef|if|ifdef|ifndef|else|elif|endif|pragma))\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.directive.ic"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#comments"
+            },
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#storage_types"
+            },
+            {
+              "include": "#control_keywords"
+            },
+            {
+              "include": "#builtin_functions"
+            },
+            {
+              "include": "#operators"
+            }
+          ]
+        }
+      ]
+    },
+    "storage_modifiers": {
+      "patterns": [
+        {
+          "name": "storage.modifier.ic",
+          "match": "\\b(persistent)\\b"
+        }
+      ]
+    },
+    "storage_types": {
+      "patterns": [
+        {
+          "name": "storage.type.ic",
+          "match": "\\b(int|long|float|char|void|struct|union|typedef)\\b"
+        }
+      ]
+    },
+    "control_keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.ic",
+          "match": "\\b(if|else|while|for|do|return|break|continue|switch|case|default)\\b"
+        }
+      ]
+    },
+    "operator_keywords": {
+      "patterns": [
+        {
+          "name": "keyword.operator.sizeof.ic",
+          "match": "\\b(sizeof)\\b"
+        }
+      ]
+    },
+    "builtin_functions": {
+      "patterns": [
+        {
+          "name": "support.function.ic",
+          "match": "\\b(fd|bk|off|ao|alloff|allbrake|motor|servo|servo_on|servo_off|analog|digital|knob|start_button|stop_button|sonar|light|touch|sleep|msleep|seconds|mseconds|reset_system_time|beep|tone|set_beeper_pitch|beeper_on|beeper_off|start_process|kill_process|defer|hog_processor|poke|peek|pokeword|peekword|bit_set|bit_clear|printf|cprintf|cls|enable_encoder|read_encoder|reset_encoder|zx21_encoder|compass|ultrasonic|gp2d120|init_camera|track_orange|track_blue|random|_raw_analog|callml|_set_motor)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.ic",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ic",
+              "match": "\\\\."
+            },
+            {
+              "name": "constant.other.placeholder.ic",
+              "match": "%[-+0 #]*[0-9]*(\\.[0-9]+)?[hlL]?[difsxcueEgG%]"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.ic",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ic",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.binary.ic",
+          "match": "\\b0[bB][01]+\\b"
+        },
+        {
+          "name": "constant.numeric.hexadecimal.ic",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.ic",
+          "match": "\\b[0-9]+\\.[0-9]*([eE][+-]?[0-9]+)?[fF]?\\b|\\b\\.[0-9]+([eE][+-]?[0-9]+)?[fF]?\\b|\\b[0-9]+[eE][+-]?[0-9]+[fF]?\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.ic",
+          "match": "\\b[0-9]+[uULl]*\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.compound.ic",
+          "match": "\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>="
+        },
+        {
+          "name": "keyword.operator.comparison.ic",
+          "match": "==|!=|<=|>="
+        },
+        {
+          "name": "keyword.operator.logical.ic",
+          "match": "&&|\\|\\||!"
+        },
+        {
+          "name": "keyword.operator.bitwise.ic",
+          "match": "<<|>>|&|\\||\\^|~"
+        },
+        {
+          "name": "keyword.operator.increment-decrement.ic",
+          "match": "\\+\\+|--"
+        },
+        {
+          "name": "keyword.operator.relational.ic",
+          "match": "<|>"
+        },
+        {
+          "name": "keyword.operator.assignment.ic",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.ic",
+          "match": "\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.ternary.ic",
+          "match": "\\?|:"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.terminator.statement.ic",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.delimiter.ic",
+          "match": ","
+        },
+        {
+          "name": "punctuation.section.parens.ic",
+          "match": "[()]"
+        },
+        {
+          "name": "punctuation.section.braces.ic",
+          "match": "[{}]"
+        },
+        {
+          "name": "punctuation.section.brackets.ic",
+          "match": "[\\[\\]]"
+        }
+      ]
+    },
+    "function_calls": {
+      "patterns": [
+        {
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": {
+              "name": "entity.name.function.ic"
+            }
+          }
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.ic",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    }
+  }
+}

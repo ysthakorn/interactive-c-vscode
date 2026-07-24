@@ -1,0 +1,91 @@
+#use "libsim.ic"
+
+int servo0, servo1, servo2, servo3, servo4, servo5;
+
+int analog(int port)
+{  
+  if (port < 0) {
+    printf("Analog ports are from 0 to 6\n");
+    beep();
+    return -1;
+  } else if (port < 7) {
+    return sim_sensor(port);
+  } else if (port > 6) {
+    printf("Port %d is not an analog input\n", port);
+    beep();
+    return -1;
+  } else {
+    printf("Analog port out of range\n");
+    beep();
+    return -1;
+  }
+}
+
+int digital(int port)
+{
+  if (port < 7) 
+    return analog(port) < 128;
+  if (port < 16) 
+    return sim_sensor(port);
+  else {
+    printf("Digital port out of range\n");
+    beep();
+    return -1;
+  }
+}
+
+void motor(int port, int speed)
+{
+	sim_motor(port, speed, 0, 3);
+}
+
+void off(int port)
+{
+	motor(port, 0);
+}
+
+void fd(int port)
+{
+	motor(port, 100);
+}
+
+void bk(int port)
+{
+	motor(port, -100);
+}
+
+void alloff()
+{
+	sim_alloff(4);
+}
+
+void ao()
+{
+	alloff();
+}
+
+int start_button()
+{
+	return peek(0x7036);
+}
+
+int stop_button()
+{
+	return peek(0x7037);
+}
+
+int knob()
+{
+	return peek(0x7038);
+}
+
+
+void init_expbd_servos(int servo)
+{
+}
+
+int sonar()
+{
+	return 1;
+}
+

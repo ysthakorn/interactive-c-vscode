@@ -1,0 +1,274 @@
+// Interactive C Library for AX-11 Activity Board (INEX)
+// Based on Handy Board lib_hb.ic by Randy Sargent
+// Adapted for AX-11 68HC11 board by INEX (Innovative Experiment Co., Ltd.)
+//
+// Compatible with IC 4.30axV2 and IC 7.09ax
+//
+
+#use "lib_hb.icb"
+
+/*******************/
+/* TIME PRIMITIVES */
+/*******************/
+
+// DOC reset_system_time()     Reset the system clock
+void reset_system_time()
+{
+    pokeword(0x14, 0);
+    pokeword(0x12, 0);
+}
+
+/*  returns time since reset or reset_system_time in seconds */
+float seconds()
+{
+    return ((float) mseconds()) / 1000.;
+}
+
+void sleep(float seconds)
+{
+    msleep((long)(seconds * 1000.));
+}
+
+void msleep(long msec)
+{
+    long end_time= mseconds() + msec;
+
+    while (1) {
+        long done= mseconds()-end_time;
+        if (done >= 0L && done <= 1000L) break;
+    }
+}
+
+void beep()
+{
+    tone(500., .1);
+}
+
+void tone(float frequency, float length)
+{
+    set_beeper_pitch(frequency);
+    beeper_on();
+    sleep(length);
+    beeper_off();
+}
+
+void beeper_on()
+{
+    bit_set(0x1020, 0b00000001);
+    bit_set(0x1022, 0b00001000);
+}
+
+void beeper_off()
+{
+    bit_clear(0x1022, 0b00001000);
+    bit_clear(0x1020, 0b00000001);
+    bit_clear(0x1000, 0b00001000);
+}
+
+void set_beeper_pitch(float frequency)
+{
+    pokeword(0x26, (int)(1E6 / frequency));
+}
+
+
+/***************************************************************** */
+/*                                                                */
+/* MOTOR PRIMITIVES                                               */
+/*                                                                */
+/*    fd(n)       sets motor n to full on in the green direction  */
+/*    bk(n)       sets motor n to full on in the red direction    */
+/*    motor(n, s) sets motor n on at speed s;                     */
+/*                s= 100 is full on green,                        */
+/*                s= -100 is full on red,                         */
+/*                s= 0 is off                                     */
+/*    off(n)      turns off motor n                               */
+/*                                                                */
+/*    alloff()    turns off all motors                             */
+/*    ao()        turns off all motors                             */
+/*                                                                */
+/*    motors are numbered 0 through 3.                            */
+/***************************************************************** */
+
+
+void fd(int motor)
+{
+    _set_motor(motor, 0, 128);
+}
+
+void bk(int motor)
+{
+    _set_motor(motor, 1, 128);
+}
+
+void off(int motor)
+{
+    bit_clear(0x0e, 1 << (4 + motor));
+}
+
+void alloff()
+{
+    poke(0x0e, 0b0000000);
+}
+
+void ao()
+{
+    alloff();
+}
+
+void allbrake()
+{
+    int i;
+    for (i = 0; i < 4; i++) {
+        _set_motor(i, 0, 0);
+        bit_set(0x0e, 1 << (4 + i));
+    }
+}
+
+void motor(int m, int speed)
+{
+    if (speed >= 0) {
+        if (speed>100) speed=100;
+        _set_motor(m, 0, (128*speed)/100);
+    } else {
+        if (speed<-100) speed=-100;
+        _set_motor(m, 1, (-128*speed)/100);
+    }
+}
+
+// speed is 0 to 128
+void _set_motor(int motor, int dir, int speed)
+{
+    if (motor<0) motor= 0;
+    if (motor>3) motor= 3;
+    bit_set(0x0e, 1 << (4 + motor));
+    if (dir)
+        bit_set(0x0e, 1 << motor);
+    else
+        bit_clear(0x0e, 1 << motor);
+    poke(0x22+motor, speed);
+}
+
+
+/*********************/
+/*** SERVO CONTROL ***/
+/*********************/
+
+// AX-11 has 6 servo ports (0-5)
+// servo position range: typically 0-255
+
+void servo(int channel, int position)
+{
+    if (channel < 0) channel = 0;
+    if (channel > 5) channel = 5;
+    if (position < 0) position = 0;
+    if (position > 255) position = 255;
+    poke(0x30 + channel, position);
+}
+
+void servo_on()
+{
+    bit_set(0x39, 0b00010000);
+}
+
+void servo_off()
+{
+    bit_clear(0x39, 0b00010000);
+}
+
+
+/*********************/
+/*** SENSOR INPUTS ***/
+/*********************/
+
+int stop_button()
+{
+    return ! (0x40 & (peek(0x7fff)));
+}
+
+int start_button()
+{
+    return ! (0x80 & (peek(0x7fff)));
+}
+
+void start_press()
+{
+    while (!start_button());
+    while (start_button());
+    beep();
+}
+
+void stop_press()
+{
+    while (!stop_button());
+    while (stop_button());
+    beep();
+}
+
+int knob()
+{
+    return _raw_analog(7);
+}
+
+
+/****************************/
+/*** INEX SENSOR MODULES  ***/
+/****************************/
+
+// ZX-21 Wheel Encoder
+// Returns encoder count from specified channel
+int zx21_encoder(int channel)
+{
+    return analog(channel);
+}
+
+// Electronic Compass Module
+// Returns compass heading value (0-359 degrees)
+int compass()
+{
+    // Read compass through analog port
+    // Calibration may be required
+    return analog(16);
+}
+
+// Ultrasonic Rangefinder
+// Returns distance in centimeters
+int ultrasonic(int channel)
+{
+    // Trigger and read ultrasonic sensor on specified channel
+    return analog(channel);
+}
+
+// Sharp GP2D120 Infrared Distance Sensor
+// Returns distance value (effective range 4-30cm)
+int gp2d120(int channel)
+{
+    return analog(channel);
+}
+
+
+/*****************************/
+/*** Multi-Tasking Support ***/
+/*****************************/
+
+void hog_processor()
+{
+    poke(0x0a, 0);
+}
+
+
+/********************************/
+/*** System Interrupt Control ***/
+/********************************/
+
+void _system_pwm_on() {bit_set(0x39, 0b00000100);}
+void _system_pwm_off() {bit_clear(0x39, 0b00000100);}
+
+void _system_print_on() {bit_set(0x39, 0b00000001);}
+void _system_print_off() {bit_clear(0x39, 0b00000001);}
+
+
+/* random numbers from peeking at 2 MHz system clock */
+int random(int mod)
+{
+    return (peekword(0x100e) & 0x7fff) % mod;
+}

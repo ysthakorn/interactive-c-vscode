@@ -1,0 +1,294 @@
+// For Interactive C 4.0 running on a Handyboard 1.2
+
+/* 
+  January 24, 2003         Randy Sargent
+  Fixed casting bug for sleep which prevented sleep 
+  for longer than 32.767 seconds.  Thanks to Charles Winton for reporting this.
+
+  January, 2002      Randy Sargent
+  Updated for IC 4.0
+
+  September 9, 2001     Randy Sargent
+  Changed motor routines to match new pcode 3.5 PWM
+  
+  June 12, 1998		fredm
+  moved analog and digital to separate file, "hbsensor.c", to
+    make room for substituting these functions with expbd functions.
+
+  March 1, 1998		fredm
+  re-wrote _raw_analog() in assembly		
+
+  May 13, 1995		fredm
+  imported from lib_r22.c by Fred Martin and Randy Sargent
+  added random() lib function
+
+*/
+
+#use "lib_hb.icb"
+
+/*******************/
+/* TIME PRIMITIVES */
+/*******************/
+
+/***********************************/
+/* location of various time stuff: */
+/* 0x14: time in milliseconds      */
+/***********************************/
+
+// DOC reset_system_time()     Reset the system clock
+void reset_system_time()
+{
+    pokeword(0x14, 0);
+    pokeword(0x12, 0);
+}
+
+/*
+    mseconds() is now a C primitive that returns type <long>
+*/
+
+/*  returns time since reset or reset_system_time in seconds */
+float seconds()
+{
+    return ((float) mseconds()) / 1000.;
+}
+void sleep(float seconds)
+{
+    msleep((long)(seconds * 1000.));
+}
+
+void msleep(long msec)
+{
+    long end_time= mseconds() + msec;
+
+    while (1) {
+	/* if the following test doesn't execute at least once a second,
+	   msleep may not halt */
+	long done= mseconds()-end_time;
+	if (done >= 0L && done <= 1000L) break;
+    }
+}
+
+void beep()
+{
+    tone(500., .1);
+}
+
+/*  1/2 cycle delay in .5us goes in 0x26 and 0x27  */ 
+void tone(float frequency, float length)
+{
+    set_beeper_pitch(frequency);
+    beeper_on();
+    sleep(length);
+    beeper_off();
+}
+
+void beeper_on()
+{
+    bit_set(0x1020, 0b00000001);
+    bit_set(0x1022, 0b00001000);
+}
+
+void beeper_off()
+{
+    bit_clear(0x1022, 0b00001000);
+    bit_clear(0x1020, 0b00000001);
+    bit_clear(0x1000, 0b00001000);	/* turn power to spkr off */
+}
+
+void set_beeper_pitch(float frequency)
+{
+    pokeword(0x26, (int)(1E6 / frequency));
+}    
+    
+/***************************************************************** */
+/*                                                                */
+/* MOTOR PRIMITIVES                                               */
+/*                                                                */
+/*  	fd(n)	sets motor n to full on in the green direction    */
+/*  	bk(n)	sets motor n to full on in the red direction      */
+/*  	motor(n, s)	sets motor n on at speed s;               */
+/*  			s= 100 is full on green,                  */
+/*  			s= -100 is full on red,                   */
+/*  			s= 0 is off                               */
+/*  	off(n)		turns off motor n 			  */
+/*                                                                */
+/*  	alloff()	turns off all motors                      */
+/*  	ao()		turns off all motors                      */
+/*                                                                */
+/*                                                                */
+/*  	motors are numbered 0 through 3.                          */
+/***************************************************************** */
+
+
+//  location of various motor stuff for PWM routine 
+//                                                  
+//  poke byte into "motor" to be output by PWM	   
+//  motor:   0x0e                                   
+//       low bits of "motor" determine directions;  
+//       high bits determine on/off state.	   *
+//                                                  
+//  speed0-3 are numbers between 0 (0% duty cycle) and 128 (100% duty cycle)
+//
+//  speed0:  0x22                                   
+//  speed1:  0x23                                   
+//  speed2:  0x24                                   
+//  speed3:  0x25                                  
+
+
+void fd(int motor)
+{
+    _set_motor(motor, 0, 128);
+}
+
+void bk(int motor)
+{	
+    _set_motor(motor, 1, 128);
+}
+
+void off(int motor)
+{
+    bit_clear(0x0e, 1 << (4 + motor));
+}
+
+void alloff()
+{
+    poke(0x0e, 0b0000000);
+}
+
+void ao()
+{
+    alloff();
+}
+
+void motor(int m, int speed)
+{
+  if (speed >= 0) {
+    if (speed>100) speed=100;
+    _set_motor(m, 0, (128*speed)/100);
+  } else {
+    if (speed<-100) speed=-100;
+    _set_motor(m, 1, (-128*speed)/100);
+  }
+}
+
+// speed is 0 to 128
+void _set_motor(int motor, int dir, int speed)
+{
+  if (motor<0) motor= 0;
+  if (motor>3) motor= 3;
+  bit_set(0x0e, 1 << (4 + motor));	/* turn motor on */
+  if (dir)
+    bit_set(0x0e, 1 << motor);	// set direction for backward
+  else
+    bit_clear(0x0e, 1 << motor);	/* set dir for forward */
+  poke(0x22+motor, speed);
+}
+
+
+/*********************/
+/*** SENSOR INPUTS ***/
+/*********************/
+
+int stop_button()
+{
+    return ! (0x40 & (peek(0x7fff)));
+}
+
+int start_button()
+{
+    return ! (0x80 & (peek(0x7fff)));
+}
+
+void start_press()
+{
+    while (!start_button());
+    while (start_button());
+    beep();
+}
+
+void stop_press()
+{
+    while (!stop_button());
+    while (stop_button());
+    beep();
+}
+
+int knob()
+{
+    return _raw_analog(7);
+}
+    
+/*****************************/
+/*** Multi-Tasking Support ***/
+/*****************************/
+
+/*  gives process that calls it 256 ticks (over 1/4 sec)
+    more to run before being swapped out
+
+    call repeatedly to hog processor indefinitely  */
+void hog_processor()
+{
+    poke(0x0a, 0);
+}
+
+/*  defer is now a C primitive  */
+
+
+
+/********************************/
+/*** System Interrupt Control ***/
+/********************************/
+
+/*
+
+    These functions allow you to turn on and off various features
+    controlled by the system interrupt routines.  The more features
+    you turn off, the faster your code will run.
+
+    On reset, the features have the following state:
+       pulse width modulation ON
+       infrared decoding      ON
+       LCD printing           ON
+       quad shaft decoding    OFF
+       IR tranmission	      OFF
+
+    This uses approx. 30% of total CPU time.
+
+    Approximate benchmarks:
+
+x    Feature		% of CPU
+    -------		--------
+    PWM			    3
+    IR decode		   11
+    LCD printing (active)   8
+    LCD printing (inactive) 1
+    quad shaft decode	    5
+    IR transmission	    1
+    
+*/    
+
+/*
+  pulse width modulation control:
+  if off, all motors run at full speed
+  if on,  speed bytes are used to determine motor speed
+*/
+void _system_pwm_on() {bit_set(0x39, 0b00000100);}
+void _system_pwm_off() {bit_clear(0x39, 0b00000100);}
+
+/*
+  printing to the LCD
+  WARNING:  printf's will wedge once the print buffer becomes full
+    if system printing is disabled  */
+void _system_print_on() {bit_set(0x39, 0b00000001);}
+void _system_print_off() {bit_clear(0x39, 0b00000001);}
+
+
+
+/* random numbers from peeking at 2 MHZ system clock */
+/* input from 2 to 32767 */
+int random(int mod)
+{
+    return (peekword(0x100e) & 0x7fff) % mod;
+}
+
+

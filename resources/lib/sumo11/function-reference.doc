@@ -1,0 +1,538 @@
+# Handyboard intrinsics
+
+KEYWORD #define
+
+<pre>#define macro expression</pre><br>
+
+The #define command creates textual replacements in C.  For example,
+if you were to have the following:<br><br>
+
+<pre>#define PI 3.14159</pre>
+
+then any time PI occurs in your program, it will be replaced by
+3.14159.  #define does not affect text within quotes, and only
+replaces whole words, so the following would not be affected by the
+above define:<br><br>
+
+<pre>SPIED
+"I love PI"</pre>
+
+A #define statement only affects the remainder of the file after the
+#define.<br><br>
+
+Your #define macro can also take arguments.  Here's an example:<br><br>
+
+<pre>#define fdslow(x) motor(x,50)</pre>
+
+This example would replace fdslow(1) with motor(1,50)
+
+KEYWORD break
+
+<pre>break;<pre>
+
+The break statement causes the enclosing for or while loop to stop
+immediately, and *for execution to resume at the next statement
+following the loop.<br><br>
+
+The break statement is only valid inside a *for* or *while* loop.<br><br>
+
+A simple example, which waits until the start button is pressed, then
+beeps:<br><br>
+
+<pre>
+while (1) {
+    if (start_button()) { 
+        // Start button got pressed
+        // Stop the loop, go straight to first statement after loop
+        break; 
+    }
+}
+beep(); // first statement after loop
+</pre>
+
+If break is used within nested loops, it only causes the innermost
+loop to exit.  This example program tests four motors sequentially,
+until the stop button is pressed:
+
+<pre>
+
+int m;
+// Test each motor, one at a time, until the stop button is pressed
+// When done, beep
+while (1) {
+    for (m= 0; m <= 3; m++) {
+        fd(m);
+        sleep(0.5);
+        if (stop_button()) break;
+        bk(m);
+        sleep(0.5);
+        if (stop_button()) break;
+        off(m)
+    }
+    // The break statements inside the for loop only exit that loop,
+    // We need to check again and call break from here to leave the while loop
+    if (stop_button()) break;
+}
+alloff(); 
+beep();   // done!
+</pre>
+
+See also: for, while, continue
+
+KEYWORD continue
+
+<pre>
+continue;
+</pre>
+
+The continue statement causes the enclosing for or while loop to skip
+the rest of the loop body for the current iteration.  Unlike break,
+continue does not stop the loop.  Instead, if the loop still wants to
+execute (the while or for condition is true), the loop will continue
+with the next iteration.<br><br>
+
+Example:<br>
+
+<pre>
+// Test each motor, but skip motor 2
+int m;
+for (m= 0; m <= 3; m++) {
+    if (m == 2) continue; // skip to next iteration
+    fd(m);
+    sleep(0.5);
+    bk(m);
+    sleep(0.5);
+    off(m);
+}
+
+See also: for, while, break
+
+KEYWORD char int long float
+
+<pre>
+int i;
+long x;
+char foo[4]="abc";
+</pre>
+
+int, long, float, and char are types which represent numbers.<br><br>
+
+int represents whole numbers (integers) from -32768 up to 32767<br>
+long represents whole numbers (integers) from -2147483648 up to 2147483647<br>
+float represents decimal (floating-point) numbers<br>
+char represents whole numbers (integers) from 0 up to 255<br><br>
+
+int is the most common numeric type.  long values are most often used
+to represent times in milliseconds (see mseconds and msleep).  float
+numbers are very flexible, but math involving floats is much slower
+than math involving ints or longs.<br><br>
+
+In Interactive C, char is only used in arrays, typically for strings.
+For single values, use int instead.<br><br>
+
+KEYWORD if else
+
+<pre>
+if (<i>test</i>) { <i>body;</i> }
+</pre>
+
+The simplest if construction has two parts: a test and a body.  First,
+the test is performed.  Second, *if the test succeeded, body will be
+executed.<br><br>
+
+Example:<br>
+
+<pre>
+// If analog sensor 4 reads higher than 100, turn motor 0 on forwards
+if (analog(4)>100) {
+  fd(0);
+}
+</pre>
+
+An if construction can also have an <b>else</b> clause, which is
+executed if the test fails:<br>
+
+<pre>
+// If analog sensor 4 reads higher than 100, turn motor 0 on forwards
+// Otherwise, turn motor 0 on backwards
+if (analog(4)>100) {
+  fd(0);
+} else {
+  bk(0);
+}
+</pre>
+
+// KEYWORD while
+// while (condition) { body; }
+// Loop while condition is true (non-zero)
+2<pre>
+while (<i>test</i>) { <i>body;</i> }
+</pre>
+
+A while construct repeats a statement or group of statements, so long
+as a test succeeds.<br><br>
+
+Example:<br>
+<pre>
+// If analog(4) is less than 100, beep, and keep beeping
+// until analog(4) is greater than or equal to 100
+while (analog(4)<100) {
+  beep();
+}
+</pre>
+
+The while loop works in four steps:<br>
+Step 1.  Perform test<br>
+
+Step 2.  If test fails, stop.  The while loop is done.  (Execution will
+continue with whatever is after the while loop.)<br>
+
+Step 3.  Execute the loop body.<br>
+
+Step 4.  Go back to step 1<br><br>
+
+It is important to notice that the while test is performed once per loop.  
+
+<pre>
+// Follow the directions on the shampoo 
+while (hot_water_hasnt_run_out()) {
+  lather();
+  rinse();
+}
+</pre>
+
+
+
+
+
+
+
+// KEYWORD for
+// for (initial; condition; aftereach) { body; }      
+// For loop.
+<pre>
+for (<i>initial</i>; <i>condition</i>; <i>aftereach</i>) { <i>body;</i> }
+</pre>
+
+The for statement creates a loop
+
+// KEYWORD persistent
+
+// KEYWORD return
+
+// KEYWORD struct
+
+// KEYWORD typedef
+
+// KEYWORD union
+
+// KEYWORD void
+
+
+// Functions (builtin and otherwise)
+
+// DOC alloff
+// alloff()
+// Turn motors 0-3 off
+
+// DOC analog
+// int analog(int: channel)
+// Read analog sensor, returns 0-255
+
+// DOC ao
+// ao()
+// Turn motors 0-3 off
+
+// DOC atan
+// float atan(float)
+// Arctangent (in radians)
+
+// DOC beep
+// beep()
+// Make a quick beep
+
+// DOC beeper_off
+// void beeper_off()
+// Turn the beeper off (use with beeper_on and set_beeper_pitch)
+
+// DOC beeper_on
+// void beeper_on()
+// Turn the beeper on (call set_beeper_pitch first)
+
+// DOC bk
+// void bk(int: motor 0-3)      
+// Turn motor on in "backwards" directionint)
+
+// DOC clear_digital_out
+// clear_digital_out(int: channel)
+// Set expansion board digital output to logic low
+
+// DOC cos
+// float cos(float)
+// Cosine of angle (radians)
+
+// DOC defer
+// defer()      
+// Switch to another process now
+
+// DOC digital
+// int digital(int)
+// Read digital sensor.  1 for button pressed, 0 for not pressed
+
+// DOC disable_encoder
+// void disable_encoder(int: channel 0-3)
+// Disable encoder channel
+
+// DOC enable_encoder
+// void enable_encoder(int: channel 0-3)
+// Enable encoder channel
+
+// DOC exp10
+// float exp10(float: x)
+// Return 10 to the power of x
+
+// DOC exp
+// float exp(float: x)
+// Return e to the power of x
+
+// DOC fd
+// void fd(int: motor 0-3)      
+// Turn motor on in "forwards" directionint)
+
+// DOC hog_processor
+// void hog_processor()
+// Keep from switching to another process
+
+// DOC init_expbd_servos
+// init_expbd_servos(int action)
+// Enable expansion board servos if action=1.  
+// Disable expansion board servos if action=0.
+
+// DOC kill_process
+// void kill_process(int: pid)
+// Kill process # pid (pid is returned by start_process)
+
+// DOC knob
+// int knob()
+// Current position of knob, 0 to 255
+
+// DOC log10
+// float log10(float: x)
+// Returns the log (base 10) of x
+
+// DOC log
+// float log(float)
+// Returns the log (base e) of x
+
+// DOC motor
+// motor(int: motor 0 to 3, int: speed -100 to 100)
+// Turn motor on at given speed
+
+// DOC mseconds
+// long mseconds()
+// Return the number of milliseconds since the board was reset
+
+// DOC msleep
+// msleep(long: duration in milliseconds)
+// Wait for given duration
+
+// DOC off
+// void off(int: motor 0-3)
+// Turn motor off
+
+// DOC printf
+// void printf(string: "format", args...)
+// Print to the LCD.  Examples:
+// printf("Hello\n");
+// printf("analog(3) is %d\n", analog(3));
+
+// DOC random
+// int random(int)
+// Return a random number between 0 and num-1, inclusive
+
+// DOC read_encoder
+// int read_encoder(int: channel 0-3)
+// Gives the number of counts for encoder (must call enable_encoder)
+
+// DOC reset_encoder
+// reset_encoder(int: channel 0-3)
+// Reset count for encoder
+
+// DOC reset_system_time
+// void reset_system_time()
+// Reset the system time to 0
+
+// DOC seconds
+// float seconds()
+// Return the number of seconds since the board was reset
+
+// DOC servo0
+// int servo0
+// Set this variable to control servo 0 (must call init_expbd_servos first)
+
+// DOC servo1
+// int servo1
+// Set this variable to control servo 1 (must call init_expbd_servos first)
+
+// DOC servo2
+// int servo2
+// Set this variable to control servo 2 (must call init_expbd_servos first)
+
+// DOC servo3
+// int servo3
+// Set this variable to control servo 3 (must call init_expbd_servos first)
+
+// DOC servo4
+// int servo4
+// Set this variable to control servo 4 (must call init_expbd_servos first)
+
+// DOC servo5
+// int servo5
+// Set this variable to control servo 5 (must call init_expbd_servos first)
+
+// DOC set_beeper_pitch
+// void set_beeper_pitch(float: frequency)
+// Set the beeper pitch (use with beeper_on and beeper_off)
+
+// DOC set_digital_out
+// int set_digital_out(int)
+// Set expansion board digital output to logic high
+
+// DOC sin
+// float sin(float)
+// Sine of angle (radians)
+
+// DOC sleep
+// void sleep(float: duration in seconds)
+// Wait for given duration
+
+// DOC sonar
+// int sonar()
+// Fires sonar and reports approximate distance in
+// millimeters.  32767 means no echo detected.
+
+// DOC sqrt
+// float sqrt(float)
+// Square root
+
+// DOC start_button
+// int start_button()
+// Return 1 if start button pressed, 0 if not
+
+// DOC start_press
+// start_press()
+// Wait for start button to be pressed
+
+// DOC start_process
+// int start_process(function call)
+// Start a new process
+
+// DOC stop_button
+// int stop_button()
+// Return 1 if stop button pressed, 0 if not
+
+// DOC stop_press
+// stop_press()
+// Wait for stop button to be pressed
+
+// DOC tan
+// float tan(float: angle)
+// Tangent of angle (radians)
+
+// DOC test_digital_out
+// int test_digital_out(int: channel)
+// Return the last commanded state of the expansion board digital output
+
+// DOC tone
+// tone(float: frequency, float: duration in seconds)
+// Make a tone
+
+# Not worth templatizing
+lib   beeper_on
+lib   beeper_off
+lib   set_beeper_pitch
+
+lib   fd
+doc   fd fd(int: motor 0-3)      Turn motor on in "forwards" direction
+
+lib   bk
+doc   bk bk(int: motor 0-3)      Turn motor on in "forwards" direction
+
+lib   off
+doc   off off(int: motor 0-3)      Turn motor off
+
+lib   brake
+doc   brake brake(...)    THIS FUNCTION DOES NOT EXIST FOR THE HANDYBOARD
+
+lib   alloff
+doc   alloff alloff()      Turn all motors off
+
+lib   ao
+doc   ao ao()      Turn all motors off
+
+lib   motor
+doc   motor motor(int: motor 0 to 3, int: speed -100 to 100)      Turn motor on at given speed
+
+lib   stop_button
+doc   stop_button stop_button()      Return 1 if stop_button is pressed
+
+lib   start_button
+doc   start_button start_button()      Return 1 if start_button is pressed
+
+lib   knob
+doc   knob knob()      Returns current position of knob, 0 to 255
+
+lib   hog_processor
+doc   hog_processor hog_processor()     Keep from switching to another process
+
+lib   defer
+doc   defer defer()      Switch to another process now
+
+lib	start_process
+doc 	start_process(function)      Start a new process.
+
+lib	defer
+doc	kill_process(int: pid)      Kill process # pid (pid is returned by start_process)
+
+lib   random
+doc   random(int: num)      Return a random number between 0 and num-1, inclusive
+
+lib   printf
+doc   printf printf(string: "format", args...)      Print to the LCD.  \
+                               Examples: printf("Hello\n");  \
+                               printf("analog(3) is %d\n", analog(3));
+
+lib   servo0
+doc   servo0 int servo0:  Set this variable to control servo 0. \
+			(Must call init_expbd_servos first)
+lib   servo1
+doc   servo1 int servo1:  Set this variable to control servo 1. \
+			(Must call init_expbd_servos first)
+lib   servo2
+doc   servo2 int servo2:  Set this variable to control servo 2. \
+			(Must call init_expbd_servos first)
+lib   servo3
+doc   servo3 int servo3:  Set this variable to control servo 3. \
+			(Must call init_expbd_servos first)
+lib   servo4
+doc   servo4 int servo4:  Set this variable to control servo 4. \
+			(Must call init_expbd_servos first)
+lib   servo5
+doc   servo5 int servo5:  Set this variable to control servo 5. \
+			(Must call init_expbd_servos first)
+
+lib   init_expbd_servos
+doc   init_expbd_servos init_expbd_servos(int action)      Enable expansion \
+					board servos if \
+                                        action=1.  Disable expansion board \
+                                        servos if action=0.
+
+lib   sonar
+doc   sonar int sonar()      Fires sonar and reports approximate distance in \
+                   millimeters.  32767 means no echo detected.
+
+#
+# Standard C syntax constructs
+#
+
+// 

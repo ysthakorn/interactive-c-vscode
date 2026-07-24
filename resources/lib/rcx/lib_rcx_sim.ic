@@ -1,0 +1,285 @@
+/*////////////////////////////////////////////
+ RCX Library for Interactive C   
+ Mark Sherman
+ Updates by Randy Sargent
+
+for firmware version: bcode16
+*/
+
+#use "libsim.ic"
+
+/* Sensor Defines */
+
+#define SENSORTYPE_RAW         0
+#define SENSORTYPE_TOUCH       1
+#define SENSORTYPE_TEMP        2
+#define SENSORTYPE_LIGHT       3
+#define SENSORTYPE_ROTATION    4
+
+#define SENSORMODE_RAW        0x00
+#define SENSORMODE_BOOL       0x20
+#define SENSORMODE_EDGE       0x40
+#define SENSORMODE_PULSE      0x60
+#define SENSORMODE_PERCENT    0x80
+#define SENSORMODE_DEGREEC    0xa0
+#define SENSORMODE_DEGREEF    0xc0
+#define SENSORMODE_ANGLE      0xe0
+
+#define SensorPassive(x) setsensoractivity(x,0)
+#define SensorActive(x)  setsensoractivity(x,1)
+
+// These are bad.  Don't uncomment.
+//#define pressure(x)  light_passive(x)
+//#define analog(x)    light(x)
+
+
+int pressure ( int x){
+	return light_passive(x);   
+}
+
+int analog (int x) {
+  return light(x);  
+}
+
+/*  POWER */
+
+// Battery voltage, in volts
+float battery_volts()  
+{              
+    return 0.0;
+}
+
+/* THIS WILL POWER OFF, AND RESUME AT POWERON WHERE IT LEFT OFF.
+THIS WILL LOOSE TRACK OF TIME WHEN OFF!!!!!!!*/
+void poweroff()
+{
+}
+
+
+/* THIS WILL RESTART THE BOARD, BEGINNING EXECUTION AT MAIN.
+THIS WILL RESET THE CLOCK! */
+void reset()
+{
+}
+
+/* Motor Functions */
+
+int _this_gets_trashed;
+int A=1;
+int B=2;
+int C=3;
+
+/* mot from 1 to 3 for A-C */
+void fd(int mot)
+{
+    sim_motor(mot, 100, 1, 3);
+}
+
+/* mot from 1 to 3 for A-C */
+void bk(int mot)
+{
+    sim_motor(mot, -100, 1, 3);
+}
+
+/* mot from 1 to 3 for A-C */
+// Turns motor off in "coast" mode
+void off(int mot)
+{
+    sim_motor(mot, 100, 1, 3);
+}
+
+/* mot from 1 to 3 for A-C */
+// power is -100 to 100
+// power=0 is same as off, not brake
+void motor(int mot, int pow)
+{
+    sim_motor(mot, pow, 1, 3);
+}
+
+// Turns motor off in "brake" mode
+void brake(int mot)
+{          /* stop a motor rapidly */
+    sim_motor(mot, 0, 1, 3);
+}
+
+void reset_system_time()
+{
+    callml(0,8);      
+}
+
+void ao()
+{
+    off(1);
+    off(2);
+    off(3);
+}
+
+void alloff()
+{
+    ao();
+}
+
+
+void allbrake()
+{
+    brake(1);
+    brake(2);
+    brake(3);
+}
+
+
+/* Buttons */
+
+/* real buttons */
+/* the following functions give the status of their respective buttons 1=pressed 0=nopressed */
+
+int prgm_button()
+{
+    return peek(28728);
+}
+
+int view_button()
+{
+    return peek(28727);
+}
+
+/* fake buttons, for compatibility */
+
+int start_button()
+{
+    return view_button();
+}
+
+int stop_button()
+{
+    return prgm_button();
+}
+
+/* Sensors */
+
+
+/* sens from 1 to 3. */
+/* Returns 1 for button pressed, 0 for not pressed */
+
+//#define touch digital
+//#define analog light
+
+int _analog(int sens, int type)
+{
+	if(type)
+	{
+		if(sens >= 1 && sens <= 3)
+		{
+			return sim_sensor(sens);
+		}
+	}
+	else
+	{
+		if(sens >= 1 && sens <= 3)
+		{
+			if(sim_sensor(sens) > 0)
+			{
+				return 1;
+			}
+			return 0;
+		}		
+	}
+	return -1;
+}
+
+int digital(int sens)
+{
+	return _analog(sens, 1);
+}
+
+int touch(int sens)
+{
+	return digital(sens);
+}
+
+int light(int sens){      /* return light sensor */
+    return _analog(sens, 1);
+}
+
+int light_passive(int sens) {
+    return _analog(sens, 0);
+}
+
+/*Added Sensor  Functions 2/25/02 to go with firmware bcode12 */
+
+int sensor(int sens){
+    return callml(sens,0x1b);
+}
+
+void setsensortype(int sens,int type){
+    callml( type,sens,0x1c);
+}
+
+void setsensormode(int sens,int mode){
+    callml( mode,sens,0x1d);
+}
+
+void setsensoractivity(int sens,int act){   /* 0 is passive, 1 is active */
+    callml( act,sens,0x1e);
+}
+
+void SetSensor(int sens, int type, int mode){
+    setsensormode( sens,mode);    
+    setsensortype( sens,type);
+    
+}
+
+/* added sensor function for bcode 13*/
+void setsensorperiod(int sens, int per){
+    callml(per,sens,0x1f);   
+}
+
+/* Multitasking */
+
+void moreticks(int ticks)
+{
+    /* allow [ticks] number of ticks to execute before swapping */
+    callml(ticks,0x0c);
+    /* moreticks(50) will make a process switch 5 ticks after this statement. It can also be used to limit the number of ticks.  Moreticks (5) will make swapping occur sooner. */
+}
+
+/* returns the number of ticks left before swapping */
+int _getticksremaining()
+{      
+    return callml(0,0x0d);
+}
+
+void setticks(int ticks){      /* set the number of ticks for the current process.  This tick number remains in effect until the process is killed or it as changed agsin */
+    callml(ticks,0x0e);        
+    
+}
+
+//encoders
+
+void disable_encoder(int sen){
+    setsensorperiod(sen,0);   
+}
+
+void enable_bidir_encoder(int sen){
+    SensorActive(sen);
+    setsensortype(sen,SENSORTYPE_ROTATION);
+    setsensormode(sen,SENSORMODE_ANGLE);
+    setsensorperiod(sen,1);
+    reset_encoder(sen);   
+}
+
+int read_encoder(int sen){
+    return sensor(sen);
+}
+
+int reset_encoder(int sen){
+    pokeword( 0xb514 + 8*(sen-1) ,0 );
+}
+
+void enable_encoder(int sen){
+    SensorActive(sen);
+    setsensortype(sen,SENSORTYPE_ROTATION);
+    setsensormode(sen,SENSORMODE_PULSE);
+    setsensorperiod(sen,1);
+    reset_encoder(sen);
+}

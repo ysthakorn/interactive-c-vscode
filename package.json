@@ -1,0 +1,238 @@
+{
+  "name": "interactive-c-vscode",
+  "displayName": "Interactive C for Robotics",
+  "description": "Interactive C (IC) programming environment for educational robotics boards — Handy Board, Sumo11, LEGO RCX, AX-11",
+  "version": "0.1.0",
+  "publisher": "ic-robotics",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Education",
+    "Other"
+  ],
+  "keywords": [
+    "Interactive C",
+    "robotics",
+    "Handy Board",
+    "AX-11",
+    "INEX",
+    "Sumo11",
+    "LEGO RCX",
+    "68HC11",
+    "embedded"
+  ],
+  "activationEvents": [
+    "onLanguage:ic",
+    "onCommand:ic.selectBoard",
+    "onCommand:ic.compile",
+    "onCommand:ic.download",
+    "onCommand:ic.connect",
+    "onCommand:ic.firmwareWizard",
+    "onCommand:ic.boardDiagram",
+    "onCommand:ic.functionReference",
+    "onCommand:ic.openTerminal"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "ic",
+        "aliases": [
+          "Interactive C",
+          "IC",
+          "ic"
+        ],
+        "extensions": [
+          ".ic"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ic",
+        "scopeName": "source.ic",
+        "path": "./syntaxes/ic.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "ic.compile",
+        "title": "IC: Compile",
+        "icon": "$(play)"
+      },
+      {
+        "command": "ic.download",
+        "title": "IC: Download to Board",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "ic.connect",
+        "title": "IC: Connect to Board",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "ic.disconnect",
+        "title": "IC: Disconnect from Board",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "ic.selectBoard",
+        "title": "IC: Select Target Board"
+      },
+      {
+        "command": "ic.selectPort",
+        "title": "IC: Select Serial Port"
+      },
+      {
+        "command": "ic.firmwareWizard",
+        "title": "IC: Download Firmware to Board",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "ic.boardDiagram",
+        "title": "IC: Show Board Diagram",
+        "icon": "$(circuit-board)"
+      },
+      {
+        "command": "ic.functionReference",
+        "title": "IC: Function Reference",
+        "icon": "$(book)"
+      },
+      {
+        "command": "ic.openTerminal",
+        "title": "IC: Open Interactive Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "ic.newProject",
+        "title": "IC: New Project from Template"
+      }
+    ],
+    "configuration": {
+      "title": "Interactive C",
+      "properties": {
+        "ic.targetBoard": {
+          "type": "string",
+          "default": "ax11",
+          "enum": [
+            "handyboard",
+            "sumo11",
+            "rcx",
+            "ax11"
+          ],
+          "enumDescriptions": [
+            "Handy Board v1.2 (68HC11)",
+            "Sumo11 Board (68HC11)",
+            "LEGO Mindstorms RCX (H8/300)",
+            "AX-11 Activity Board — INEX (68HC11)"
+          ],
+          "description": "Target hardware board"
+        },
+        "ic.serialPort": {
+          "type": "string",
+          "default": "",
+          "description": "Serial port for board communication (e.g. COM3)"
+        },
+        "ic.baudRate": {
+          "type": "number",
+          "default": 9600,
+          "enum": [
+            9600,
+            19200,
+            38400,
+            57600,
+            115200
+          ],
+          "description": "Serial port baud rate"
+        },
+        "ic.icPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to ic.exe compiler (leave empty to use bundled)"
+        },
+        "ic.autoConnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically connect to board on startup"
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceLangId == ic",
+          "command": "ic.compile",
+          "group": "navigation@1"
+        },
+        {
+          "when": "resourceLangId == ic",
+          "command": "ic.download",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceLangId == ic",
+          "command": "ic.compile",
+          "group": "ic@1"
+        },
+        {
+          "when": "resourceLangId == ic",
+          "command": "ic.download",
+          "group": "ic@2"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ic-explorer",
+          "title": "Interactive C",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "ic-explorer": [
+        {
+          "id": "ic-board-info",
+          "name": "Board Info"
+        },
+        {
+          "id": "ic-functions",
+          "name": "Functions"
+        },
+        {
+          "id": "ic-sensors",
+          "name": "Sensors & Motors"
+        }
+      ]
+    },
+    "snippets": [
+      {
+        "language": "ic",
+        "path": "./snippets/ic.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  }
+}

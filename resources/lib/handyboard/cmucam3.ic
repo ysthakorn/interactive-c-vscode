@@ -1,0 +1,395 @@
+// Adapted from code by Paul Rybski
+// Simplified API for Botball by Randy Sargent 7/30/2002
+// Reorganized data output and raw data commands by Jim Peterson 8/06/02
+// This version of the library, I've removed the calls not being used for
+// immediate simplicity. Illah 1/11/2003
+// tracking correction courtesy Terry Grant 10/1/03
+// index correction Kyle M 12/02/2003
+// How to use this library:
+//
+// set the window size
+// setWin(x1, y1, x2, y2)
+//
+// init_camera: puts the camera in YUV mode, with autogain and auto wb on
+//
+// trackRaw(rmin, rmax, gmin, gmax, bmin, bmax) - you can use this
+//            function to call "TC" on the camera with your own,
+//            custom color bounds. r is really Cr; g is really Y; and
+//            b is really Cb.  -1 means comm error. 0 means no blob
+//            at all. positive numbers indicate there was a blob and
+//            report the confidence.
+//
+// After calling trackRaw, look at these variables to find the result:
+// track_size:  The approximate area of the object tracked
+//              0 means no object found
+//              Small numbers may mean that only noise is being tracked
+//              -1 means camera communications error
+// track_confidence: when in the 100+ range, that means we definitely
+//                   have a blob. 0 means no luck at all.
+// track_x:     X position of tracked object, -40 to 40
+//              Negative is left, positive is right, 0 is straight ahead
+// track_y:     Y position of tracked object, -71 to 71
+//              Negative is low, positive is high, 0 is level with camera
+// track_area:  The area of the bounding rectangle of the tracked color
+//
+
+/* 
+ * This is a bare-bones cmucam driver which handles everything in raw mode
+ * without ACK/NCKs.  The serial interrupt is a dedicated cmucam packet
+ * parser.
+ *
+ * Currently, only S, N, M and C packets are supported
+ *
+ * Variables defined in the cmcsci2a.asm file are:
+ *
+ * cmu_packet  : stores what kind of packet was returned 'M' or 'C'
+ * cmu_new_val : is set to 1 when a new packet is received.  set to 0 
+ *               when the packet is being transferred
+ * cmu_start   : pointer to the head of the storage array.  This value must
+ *               be set in this file.  Currently, it is set to point at
+ *               cmucam_data[]
+ * 
+ *
+ * In order to use, first load the cmcsci2a.icb file.
+ * 
+ * Then, the init_camera() function defined below must be called.
+
+ * From that point, whenever a command is sent to the camera (for example):
+ *
+ * send_R_command(cmdbuff,n);
+ *
+ * the function will wait for a second for the CMUCam to return the
+ * appropriate data.  If the camera does not return the appropriate
+ * data, it this function will return false.  If the function returns
+ * true, then the new data will be located in the cmucam_data[] array.
+ * Use the defines at the top of this file to retrieve the data from
+ * the array.
+ *
+ * Author Paul E. Rybski <rybski@cs.umn.edu> */
+
+#use "cmcsci2b.icb"
+
+#define cmu_WAIT 40L
+#define cCMUCAM_DATA_SIZE 17  
+persistent int CAM_MINDELT = 3; //changed from 1 dm 1/9/03
+persistent int CAM_DEVFACT = 1; //chnaged from 4 dm 1/9/03
+
+/*  packet indices like data from separate packages is read to the same
+locations */
+
+// N message starts here
+#define cmu_SERVO 0   
+// M message starts here, N matches
+#define cmu_MX 1      
+#define cmu_MY 2      
+// C message starts here, N and M match
+#define cmu_X1 3      
+#define cmu_Y1 4
+#define cmu_X2 5
+#define cmu_Y2 6
+#define cmu_PIXELS 7
+#define cmu_CONFIDENCE 8    
+// last data from N, M, or C messages above
+// note that we leave a one byte buffer between message types
+// S message starts here returned by TW and GM starts below
+#define cmu_RMEAN 10         
+#define cmu_GMEAN 11
+#define cmu_BMEAN 12
+#define cmu_RDEV 13
+#define cmu_GDEV 14
+#define cmu_BDEV 15
+
+/* 
+ * This stores the data returned from the camera 
+ * The type of the packet is stored in the variable 'cmu_packet'
+ * The remaining values depend on the type of the first
+ */
+persistent char cmucam_data[cCMUCAM_DATA_SIZE];
+
+/* This is the raw command buffer the minimum raw command is
+ * 3 bytes. the format is 2 chars command id such as SW, TC or GM.
+ * the next byte is the count of parameter bytes to follow. A zero
+ * in cmdbuff[2] means no more bytes to command.
+ * The maximum length command appears to be the CR of 16 register settings.
+ *   
+ */ 
+persistent char cmdbuff[35]; 
+
+/* Result data from track().
+ * track_size is taken directly from cmucam_data[cmu_PIXELS]
+ * track_x and track_y are taken directly from cmucam_data[cmu_MX] and 
+ *   cmucam_data[cmu_MY] when supplied. If the middle mass mode is off
+ *   these values are calculated as the center of the bounding box as:
+ *   track_x = (cmucam_data[cmu_X1] + cmucam_data[cmu_X2])/2 and
+ *   track_y = (cmucam_data[cmu_Y2] + cmucam_data[cmu_Y2])/2.
+ * track_area is the area of the bounding box. That is:
+ *   (x2-x1) * (y2-y1).         
+ */
+int track_size, track_x, track_y, track_area, track_confidence;
+
+
+/* This sends an array of raw bytes of ct bytes */
+void send_R_command_raw(char msg[],int ct) {
+    int x=0;
+    int y=0;
+    // Randy added this delay 1/9/03
+    // This delay is probably masking a bug somewhere in the logic
+    // of this communication library
+    // experimentally, 2 fails and 4 succeeds, so I'm bumping to 5
+    // just to be safe
+    msleep(5L);
+    
+    cmucam_data[16] = cmu_last_char;
+    
+    for (x=0;x<ct;x++)
+      {
+        y=msg[x];
+        while (!(peek(0x102e) & 0x80) ); /* wait UART */
+        poke(0x102f, y);
+    }
+    // Wait
+    msleep(40L);
+}
+
+/* This sends an array of raw bytes of ct bytes */
+int send_R_command_wait_reply(char msg[],int ct) {
+    long timer;
+    /* Request chars */
+    pokeword(0x47, (int) &cmucam_sci_handler);
+    poke(0x46, 40); // Request next 40 chars
+    /* Send the command */
+    send_R_command_raw(msg,ct);
+    /* Wait 1 second for first chars to arrive */
+    timer = mseconds()+1000L;
+    while (timer > mseconds()) {
+        defer();
+        if (peek(0x46) < 40) {
+	  // Got some chars.  Wait until no chars received in 10 msec
+	  while (1) {
+	    int last= peek(0x46);
+	    msleep(10L);
+	    if (peek(0x46) == last) {
+	      poke(0x46, 0); // Stop requesting chars
+	      return 0;
+	    }
+	  }
+	}
+    }
+    poke(0x46, 0); // Stop requesting chars
+    printf("Can't talk to   CMUcam\n");
+    tone(1500.,.1);
+    tone(1500.,.1);
+    tone(1500.,.1);
+    tone(1500.,.1);
+    sleep(1.0);
+    return 1;
+}
+
+void send_R_command_require_reply(char msg[], int ct) {
+  // Require two successful commands in a row if we see a failure
+  int ntries= 1;
+  while (ntries) {
+    if (send_R_command_wait_reply(msg, ct) == 0) ntries--;
+    else ntries=2;
+  }
+}
+
+/* Send a raw bytes command.  Fail if the command takes more than a 
+   second to return. */
+int send_R_command(char msg[],int ct) {
+    long timer;
+    /* Clear the flag */
+    cmu_new_val = 0;
+    /* Request chars */
+    pokeword(0x47, (int) &cmucam_sci_handler);
+    poke(0x46, 40); // Request next 40 chars
+    /* Send the command */
+    send_R_command_raw(msg,ct);
+    /* Wait for the response */
+    timer = mseconds()+1000L;
+    /* If we have to wait longer than a second, drop out */
+    while (timer > mseconds()) {
+        /* Check the flag to see if there is a new packet */
+        msleep(cmu_WAIT);
+        if (1 == cmu_new_val) { 
+            poke(0x46, 0); // Stop requesting chars
+            return 0; /* Return success */
+        }
+        if (2 == cmu_new_val) { 
+            printf("Rcmd %c%c serial error\n",msg[0],msg[1]);
+            poke(0x46, 0); // Stop requesting chars
+            tone(1500.,.1);
+            sleep(1.0);
+            return 1; /* Return failure */
+        }
+    }
+    printf("nchars %d\n", peek(0x46));
+    sleep(1.);
+    /* Timeout occurred */
+    poke(0x46, 0); // Stop requesting chars
+    printf("Rcmd %c%c timeout\n",msg[0],msg[1]);
+    tone(1500.,.1);
+    tone(1500.,.1);
+    tone(1500.,.1);
+    tone(1500.,.1);
+    sleep(1.0);
+    return 1; /* Return failure */; 
+}
+
+int init_camera()
+{
+    int i = 0;
+    sleep(1.0); // give CMUcam a chance to boot up first!
+    /* Prevents the onboard pcode to catch the incoming serial data */
+    //poke(0x3c,1);
+    for ( i = 0; i < cCMUCAM_DATA_SIZE; i++) cmucam_data[i] = 0;
+    /* Aim the assembly-defined data pointer at the head of the array */
+    cmu_start = (int)&cmucam_data[0];
+    //   cmu_last_char = 58;
+    cmucam_sci_init(0);
+    /* Put in poll mode */
+    send_R_command_require_reply("PM 1\r",5);
+
+    /* Set the delay for sending the serial command from the camera */
+    /* 0 - min delay and 255 - max delay.  If this is not set, the */
+    /* handyboard will often freeze with receiving data from the CMUcam */
+    send_R_command_require_reply("DM 30\r",6);
+    /* Put into raw mode input and output with no ACK/NCK */
+    send_R_command_require_reply("RM 3\r",5); // do NOT send in raw (bit 3 be off!) illah
+    send_R_command_require_reply("MM 1\r",5);
+    send_R_command_require_reply("NF 1\r",5);
+    return 1;
+    /* Initialize the interrupt */
+}
+
+///////////////////////////
+// randy added 7/30/2002 //
+///////////////////////////
+// modified by illah - most stuff removed... 1/11/2003 //
+
+// adds theNum in ASCII to theArray starting at index
+// startWith and returns to the caller the total # of 
+// characters added to theArray
+// this is kludged for just 3-digit or smaller numbers!
+// oh, and please only pass it positive numbers!!
+int addNum(int theNum, char theArray[], int startWith)
+{
+    int i = 0;
+    int remNum; int outerDigit;
+    outerDigit = (int)(theNum/100);
+    remNum = theNum % 100;
+    theArray[startWith] = '0' + outerDigit;
+    outerDigit = (int)(remNum/10);
+    remNum = remNum % 10;
+    theArray[startWith+1] = '0' + outerDigit;
+    theArray[startWith+2] = '0' + remNum;
+    return 3;
+}
+
+// set the window to a subset of full-window //
+// to set full window, just send "sw\r" to the camera.
+// that would be equivalent to "sw 1 1 80 143\r"
+void setWin(int x1, int y1, int x2, int y2)
+{
+    int i;
+    cmdbuff[0] = 'S';
+    cmdbuff[1] = 'W';
+    cmdbuff[2] = ' ';
+    i = 3 + addNum(x1, cmdbuff, 3);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(y1, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(x2, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(y2, cmdbuff, i);
+    cmdbuff[i++] = 13;
+    send_R_command_require_reply(cmdbuff,i);
+    defer();
+}
+
+
+
+// trackRaw() is used when you directly specify the rmin, rmax,...bmax values
+// for a TrackColor operation.
+// This function will call TC to the camera,
+// get the return values and populate them into the global data structure.
+// note that trackRaw returns -1 if the command fails, 0 if the command succeeds
+// but nothing trackable is found and a positive number indicating the confidence
+// if a confident blob is detected
+// a great blob means a confidence of 80 or 100 or more.
+int trackRaw(int rmin, int rmax, int gmin, int gmax, int bmin, int bmax)
+{ 
+    int i;
+    cmdbuff[0] = 'T';
+    cmdbuff[1] = 'C';
+    cmdbuff[2] = ' ';
+    i = 3 + addNum(rmin, cmdbuff, 3);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(rmax, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(gmin, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(gmax, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(bmin, cmdbuff, i);
+    cmdbuff[i++] = ' ';
+    i = i + addNum(bmax, cmdbuff, i);
+    cmdbuff[i++] = 13;
+    
+    if (send_R_command(cmdbuff,i)) {
+        
+        //    if (send_R_command("TC 180 240 20 150 16 18\r",24)) {
+        // command send to CMUcam failed
+        track_size = -1; cam_comm_error(); track_confidence = 0;
+        // Illah - added init_camera here to get poll mode back on //
+        init_camera();
+        return -1;
+    } else {
+        // in this case the communication to CMUcam succeeded...
+        // cmucam_data[0...7]:
+        // 0,1: CG x,y
+        // 2,3-4,5:  BBOX x1,y1-x2,y2
+        // 6: size (pixels+4)/8
+        // 7: confidence
+        msleep(cmu_WAIT); // ILLAH - put this here just to see !!!!!! ILLAH //
+        track_size= cmucam_data[cmu_PIXELS];
+        track_area = (cmucam_data[cmu_X2]-cmucam_data[cmu_X1])*
+          (cmucam_data[cmu_Y2]-cmucam_data[cmu_Y1]);
+        track_confidence = cmucam_data[cmu_CONFIDENCE];        
+        
+        if ((track_size > 1) && (cmucam_data[cmu_CONFIDENCE] > 0)) {
+            if (cmucam_data[cmu_MX] > 0) { 
+                track_x= cmucam_data[cmu_MX]-40;
+                track_y= cmucam_data[cmu_MY]-71;
+            } else {
+                track_x = ((cmucam_data[cmu_X1] + cmucam_data[cmu_X2])/2) - 40; //was [cmu_Y2]
+                track_y = ((cmucam_data[cmu_Y1] + cmucam_data[cmu_Y2])/2) - 71; //was -40
+            }
+        } else {
+            // this is the case when confidence is zero ; nothing tracked
+            track_x= track_y= 0; track_confidence = 0;
+        }
+    } // end else (in the case communication succeeded)
+    return track_confidence;
+} // end trackRaw() //
+
+void cam_comm_error()
+{
+    printf("Can't talk to   camera\n");
+    tone(1500.,.1);
+}
+int max(int x, int y)
+{ if (x > y)
+      return x;
+    else
+      return y;
+}
+
+int min(int x, int y)
+{ if (x > y)
+      return y;
+    else
+      return x;
+}
+
+

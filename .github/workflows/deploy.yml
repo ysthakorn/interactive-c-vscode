@@ -1,0 +1,91 @@
+name: Build & Package VS Code Extension
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Package VSIX
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Compile Extension
+        run: npm run compile
+
+      - name: Package VSIX
+        run: |
+          npx @vscode/vsce package --out interactive-c-vscode.vsix
+
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: interactive-c-vscode.vsix
+          path: interactive-c-vscode.vsix
+
+  release:
+    name: GitHub Release & Marketplace Publish
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download VSIX Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: interactive-c-vscode.vsix
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: interactive-c-vscode.vsix
+          body: |
+            ## Interactive C (IC5) VS Code Extension Release
+            
+            ### Features:
+            - Full C / IC language support (.ic)
+            - IntelliSense Auto-completion & Hover Docs
+            - **AX-11 Activity Board (INEX)** support (4 Motors, 6 Servos, 21 Analog, 9 Digital)
+            - Handy Board v1.2, Sumo11, and LEGO RCX support
+            - Interactive PseudoTerminal C Shell
+            - Step-by-Step Firmware Flashing Wizard
+            - Searchable Function API Reference Panel
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to VS Code Marketplace (Optional)
+        if: env.VSCE_PAT != ''
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          npm install
+          npx @vscode/vsce publish -p $VSCE_PAT

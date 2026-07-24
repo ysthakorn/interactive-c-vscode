@@ -1,0 +1,59 @@
+// AX-11 Simulation Library
+// PC-side mock functions for testing without hardware
+// Use this library when running in simulation mode
+
+// Simulated sensor values
+int _sim_analog_values[32];
+int _sim_digital_values[16];
+int _sim_motor_speeds[4];
+int _sim_motor_dirs[4];
+int _sim_servo_positions[6];
+int _sim_button_start = 0;
+int _sim_button_stop = 0;
+int _sim_knob_value = 128;
+
+/*** MOTOR SIMULATION ***/
+void fd(int motor) { _sim_motor_speeds[motor] = 100; _sim_motor_dirs[motor] = 0; printf("SIM: motor %d forward\n", motor); }
+void bk(int motor) { _sim_motor_speeds[motor] = 100; _sim_motor_dirs[motor] = 1; printf("SIM: motor %d backward\n", motor); }
+void off(int motor) { _sim_motor_speeds[motor] = 0; printf("SIM: motor %d off\n", motor); }
+void alloff() { int i; for(i=0;i<4;i++) off(i); }
+void ao() { alloff(); }
+void allbrake() { int i; for(i=0;i<4;i++) { _sim_motor_speeds[i]=0; printf("SIM: motor %d brake\n",i); } }
+void motor(int m, int speed) { _sim_motor_speeds[m] = speed; printf("SIM: motor(%d, %d)\n", m, speed); }
+
+/*** SERVO SIMULATION ***/
+void servo(int ch, int pos) { _sim_servo_positions[ch] = pos; printf("SIM: servo(%d, %d)\n", ch, pos); }
+void servo_on() { printf("SIM: servos enabled\n"); }
+void servo_off() { printf("SIM: servos disabled\n"); }
+
+/*** SENSOR SIMULATION ***/
+int analog(int ch) { return _sim_analog_values[ch]; }
+int digital(int ch) { return _sim_digital_values[ch]; }
+int knob() { return _sim_knob_value; }
+int start_button() { return _sim_button_start; }
+int stop_button() { return _sim_button_stop; }
+
+/*** INEX SENSOR SIMULATION ***/
+int zx21_encoder(int ch) { return 0; }
+int compass() { return 180; }
+int ultrasonic(int ch) { return 50; }
+int gp2d120(int ch) { return 15; }
+
+/*** TIME SIMULATION ***/
+float seconds() { return 0.0; }
+void sleep(float s) { printf("SIM: sleep(%.2f)\n", s); }
+void msleep(long ms) { printf("SIM: msleep(%ld)\n", ms); }
+void reset_system_time() { printf("SIM: time reset\n"); }
+
+/*** SOUND SIMULATION ***/
+void beep() { printf("SIM: beep!\n"); }
+void tone(float freq, float len) { printf("SIM: tone(%.0f, %.2f)\n", freq, len); }
+void set_beeper_pitch(float freq) {}
+void beeper_on() {}
+void beeper_off() {}
+
+/*** PROCESS SIMULATION ***/
+void hog_processor() {}
+
+/*** MISC ***/
+int random(int mod) { return 0; }

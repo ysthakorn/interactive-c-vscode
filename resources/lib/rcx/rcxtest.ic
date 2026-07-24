@@ -1,0 +1,101 @@
+/* ------------------------------------------------
+   Test program for basic RCX and sensors:
+   Plug bump sensors into ports 1 and 2 and light
+   sensor into port 3.  Plug motors into ports 1,
+   2 and 3 (aka A, B and C).  Run program.
+
+   version 1.0 -- 1/7/03
+   Adapted by James Maybury from a Botball tutorial
+   slide used in the past to test the RCX.
+--------------------------------------------------- */
+
+void main() {
+    
+    int speed = 0;       // stores current speed for motor 3
+    
+    // loop forever
+    while (1) {
+        displayMsg( 1 );
+        if ( start_button() == 1 ) {
+            while ( ! stop_button() ) {
+                if ( digital(1) && digital(2) ) {
+                    motor(1,-100); motor(2,100);
+                    displayMsg( 5 );
+                }
+                else if ( digital( 1 ) ) {
+                      motor(1,100); brake(2);
+                      displayMsg( 3 );
+                  }
+                  else if ( digital( 2 ) ) {
+                        motor(2,-100); brake(1);
+                        displayMsg( 4 );
+                    }
+                    else {
+                        brake(1); brake(2);
+                        displayMsg( 2 );
+                    }
+                speed = (analog(3) - 800) / 3;
+                //printf( "%d\n", speed );
+                motor(3,speed);
+            }
+            allbrake();
+        }
+    }
+    
+} // end of main
+
+// -----------------------------------------------------------
+// The code below is used to display "Scrolling" strings
+// it is dependent upon a number of items and thus minor
+// changes can cause very undesirable results - use at
+// your own risk!  See below function for other comment(s).
+// NOTES: MAX_STR_LEN is the maximum length string used
+//        MNUM is the # of messages
+//  array msgs contains the strings for each message
+//  array mpos stores the last position printed for each msg
+// -----------------------------------------------------------
+#define MNUM 5
+#define MAX_STR_LEN 100  /* much longer than needed */
+char msgs[MNUM][MAX_STR_LEN] = {
+      /*   msg 1 */ "Press view ... ",
+      /* msg 2 */ "Use touch to start motors press prgm to end ... ",
+      /* msg 3 */ "one ___ ",
+      /* msg 4 */ "two ... ",
+      /* msg 5 */ "both ___ " };
+int  mpos[MNUM] = { 0, 0, 0, 0, 0 };
+
+void displayMsg( int w ) {
+    
+    int i[5], offset = mpos[w-1], cnt;
+    
+    w -= 1;
+    for ( cnt = 0; cnt < 5; ++cnt ) {
+        i[cnt] = offset + cnt;
+        if ( msgs[w][i[cnt]] == '\0' ) {
+            offset = -cnt;
+            i[cnt] = 0;
+        }
+    }
+    // prints 5 FIVE characters since that's the width of the screen
+    // and on the RCX all 5 must be printed at once
+    printf( "%c%c%c%c%c", msgs[w][i[0]], msgs[w][i[1]],
+           msgs[w][i[2]], msgs[w][i[3]], msgs[w][i[4]] );
+    
+    mpos[w] = i[1]; // sets the new starting position for the next call
+    msleep(200L);  // NOTE - this slows down the response time!!
+    
+} // end of displayMsg
+
+// displayMsg as written above causes a program to run "slower"
+// than it has to due to the 200 MS delay in the function (done
+// so the scroll is slow enough to read).  By "running slower"
+// I mean that it is not as "responsive" to other events as one
+// would like it to be.  This could be FIXED by having the
+// displayMsg print every 50 MS but only advance to the next
+// set of 5 characters after every FOURTH time thus having the
+// same overall DISPLAY speed of 200 MS but each call only uses
+// up approx. 50 MS of time rather than 200 MS.
+// To achieve this you could create another int array to keep
+// track from 0-4 the times printed and the line "mpos[w] = i[1]"
+// would just go inside a special if statement.
+

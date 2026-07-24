@@ -1,0 +1,78 @@
+/*
+	sonar.c
+	Polaroid 6500 routines for Handy Board / Interactive C 
+	by Fred Martin, fredm@media.mit.edu
+	Sat Nov 22 13:57:35 1997
+
+ 	echo signal is connected to tic3/pa0;
+ 	init signal is pd5 (SS);
+ 	binh signal is pd4 (SCK)
+*/
+
+void sonar_init() {
+	bit_set(0x1009, 0x30);		/* ddrd */
+	bit_set(0x1021, 1);			/* at tctl2, */
+	bit_clear(0x1021, 2);		/* set tic3 for rising edge */
+}
+
+
+int sonar_sample() {
+	int start_time;
+	hog_processor();
+	poke(0x1023, 1);				/* clear tic3 flag */
+
+	start_time= peekword(0x100e);	/* capture start time */
+	bit_set(0x1008, 0x20);			/* trigger pulse */
+
+	while (!(peek(0x1000) & 0x1)) {	/* wait until receive echo */
+		hog_processor();
+		if ((peekword(0x100e) - start_time) < 0) {
+			/* if too much time has elapsed, abort */
+			bit_clear(0x1008, 0x20);
+			return -1;
+		}
+		defer();					/* let others run while waiting */
+	}
+
+	bit_clear(0x1008, 0x20);		/* clear pulse trigger */
+	
+	return peekword(0x1014) - start_time;	/* tic3 has time of echo */
+}
+
+int sonar_closeup() {
+	int start_time;
+
+	poke(0x1023, 1);				/* clear tic3 flag */
+	start_time= peekword(0x100e);
+	poke(0x1008, 0x20);
+	
+	while ((peekword(0x100e) - start_time) < 1000);
+	
+	bit_set(0x1008, 0x30);			/* turn on BINH */
+
+	while (!(peek(0x1000) & 0x01)) {
+		if ((peekword(0x100e) - start_time) < 0) {
+			/* if too much time has elapsed, abort */
+			bit_clear(0x1008, 0x30);
+			return -1;
+		}
+		defer();
+	}
+
+	bit_clear(0x1008, 0x30);
+
+	return peekword(0x1014) - start_time;	/* 0x1014 is tic3 */
+}
+
+void sonar_display()
+{
+	sonar_init();
+	
+	while (1) {
+		int result;
+		result= sonar_closeup();
+		if (result != -1) printf("%d\n", result);
+		else printf("*******\n");
+		msleep(50L);
+	}
+}

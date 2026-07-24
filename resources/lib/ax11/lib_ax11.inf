@@ -1,0 +1,70 @@
+; Interactive C Function Reference for AX-11 Activity Board (INEX)
+; Format: category|function_name|signature|description
+
+[Motor Control]
+fd|fd(int motor)|Sets motor to full speed forward (green direction). Motors numbered 0-3.
+bk|bk(int motor)|Sets motor to full speed backward (red direction). Motors numbered 0-3.
+off|off(int motor)|Turns off motor (coast). Motor number 0-3.
+ao|ao()|Turns off all motors (alias for alloff).
+alloff|alloff()|Turns off all four motors.
+allbrake|allbrake()|Applies brake to all four motors.
+motor|motor(int channel, int speed)|Sets motor speed. Speed range: -100 (full reverse) to 100 (full forward). 0 = stop.
+_set_motor|_set_motor(int motor, int dir, int speed)|Internal: Sets motor direction and speed. dir: 0=forward, 1=backward. speed: 0-128.
+
+[Servo Control]
+servo|servo(int channel, int position)|Sets servo position. Channel 0-5, position 0-255.
+servo_on|servo_on()|Enables servo PWM output.
+servo_off|servo_off()|Disables servo PWM output.
+
+[Sensor Input]
+analog|analog(int channel)|Reads 8-bit analog sensor value (0-255). Channels: AI-2 to AI-6, AI-16 to AI-31.
+digital|digital(int channel)|Reads digital input (0 or 1). Channels: DI-10 to DI-15.
+knob|knob()|Reads potentiometer knob value (0-255).
+start_button|start_button()|Returns 1 if START button is pressed, 0 otherwise.
+stop_button|stop_button()|Returns 1 if STOP button is pressed, 0 otherwise.
+start_press|start_press()|Waits for START button press and release, then beeps.
+stop_press|stop_press()|Waits for STOP button press and release, then beeps.
+
+[INEX Sensors]
+zx21_encoder|zx21_encoder(int channel)|Reads ZX-21 Wheel Encoder value from specified analog channel.
+compass|compass()|Reads Electronic Compass module heading (0-359 degrees). Connected to AI-16.
+ultrasonic|ultrasonic(int channel)|Reads Ultrasonic Rangefinder distance in cm from specified channel.
+gp2d120|gp2d120(int channel)|Reads Sharp GP2D120 IR distance sensor. Effective range 4-30cm.
+
+[Time]
+sleep|sleep(float seconds)|Pauses execution for specified number of seconds.
+msleep|msleep(long msec)|Pauses execution for specified number of milliseconds.
+seconds|seconds()|Returns time since reset in seconds (float).
+mseconds|mseconds()|Returns time since reset in milliseconds (long).
+reset_system_time|reset_system_time()|Resets the system clock to zero.
+
+[Sound]
+beep|beep()|Plays a short beep (500Hz, 0.1 sec).
+tone|tone(float frequency, float length)|Plays a tone at specified frequency for specified duration in seconds.
+set_beeper_pitch|set_beeper_pitch(float frequency)|Sets the beeper frequency without turning it on.
+beeper_on|beeper_on()|Turns on the beeper at the currently set pitch.
+beeper_off|beeper_off()|Turns off the beeper.
+
+[Multitasking]
+start_process|start_process(function_call)|Spawns a new background process. Returns process ID (pid).
+kill_process|kill_process(int pid)|Terminates a running process by its pid.
+defer|defer()|Voluntarily yields remaining CPU ticks to the next process.
+hog_processor|hog_processor()|Grants current process 256 consecutive ticks (~1/4 second).
+
+[Memory Access]
+poke|poke(int address, int value)|Writes a byte to the specified memory address.
+peek|peek(int address)|Reads a byte from the specified memory address. Returns int (0-255).
+pokeword|pokeword(int address, int value)|Writes a 16-bit word to the specified memory address.
+peekword|peekword(int address)|Reads a 16-bit word from the specified memory address.
+bit_set|bit_set(int address, int bitmask)|Sets bits in the byte at address using OR with bitmask.
+bit_clear|bit_clear(int address, int bitmask)|Clears bits in the byte at address using AND with inverted bitmask.
+
+[Display]
+printf|printf(char *format, ...)|Prints formatted text to LCD display or terminal.
+
+[System]
+random|random(int mod)|Returns a pseudo-random number from 0 to mod-1.
+_system_pwm_on|_system_pwm_on()|Enables pulse-width modulation for motor speed control.
+_system_pwm_off|_system_pwm_off()|Disables PWM. All motors run at full speed.
+_system_print_on|_system_print_on()|Enables LCD printing.
+_system_print_off|_system_print_off()|Disables LCD printing. WARNING: printf will hang if print buffer fills.

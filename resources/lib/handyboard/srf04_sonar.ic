@@ -1,0 +1,50 @@
+// Library routine to drive SRF04 sonar
+// January 4, 2002    Randy Sargent
+//
+// Connect sonar trigger to expansion board digital output 0
+// Connect sonar output to digital input 7 (TIC3)
+//
+
+#define TFLG1 0x1023
+#define TIC3 0x1014
+
+#use "srf04_sonar.icb"
+
+// Returns approximate distance in mm
+// (actually closer to units of 1.04 mm)
+
+int sonar()
+{
+    int result;
+    long begintime;
+        
+    hog_processor();
+    result= _trigger_srf04(0);
+    begintime= mseconds();
+    defer();
+    
+    // wait for input capture, but no longer than 25 msec
+    while (!(peek(TFLG1) & 0b00000001)) {
+        if (mseconds() - begintime > 25L) break;
+        defer();
+    }
+    if (!(peek(TFLG1) & 0b00000001)) {
+        // No return from sonar
+        // This may mean that no sonar is connected, or that 
+        // there was simply no echo return.  Since we can not tell the
+        // difference, just return a large number
+        return 32767;
+    }
+    
+    result= (peekword(TIC3)-result)/2;
+    if (result < 0) result += 16384;
+    // result now contains the round-trip time in microseconds
+    // Speed of sound is around 347 meters/sec
+    // 1 microsecond * 347meters/sec = .347 mm round-trip, or .1735 mm one-way
+    // So result contains the one-way distance in units of approx .1735 mm
+    result /= 6;
+    result -= 37; // zero offset due to pulse widths and receiver response
+    // result now contains the one-way distance in units of approximately 1.04 mm
+    
+    return result; // units are approximately 1.04 mm each
+}

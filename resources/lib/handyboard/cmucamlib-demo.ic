@@ -1,0 +1,40 @@
+#use "cmucamlib.ic"
+/*
+This program tests the camera and the color library.  To begin,
+point the robot at a white object so that it can adjust its white
+balance and gain and then clamp, or fix, them.  After this process,
+the robot continually calls track_blue and track_orange. Note that
+if they think they find a blob of that color, track_blue and track_orange
+return the confidence but also set the position and size of the object
+in globals (track_x, track_y, track_size, etc.). If the robot sees 
+neither a blue nor an orange object it beeps and prints 'nothing.'
+Note the confidence, which is printed out. For very blue or very orange
+Poof ball-like objects, this should be high. If the robot falsely 
+detects a blob, see if the confidence is really low.
+Note that if there is a temporary comm problem, it will also beep and 
+display an error message.  Comm problems (if not hardware related)
+normally resolve themselves after a couple seconds.
+
+HINT: be sure the slider switch is in the correct position so that
+CMUcam is talking to the HB before you start the program/turn the HB on!
+
+Written by D. Miller and others..., KIPR 1/11/03
+*/
+
+void main()
+{
+    init_camera(); // initialize the camera in YUV mode
+    clamp_camera_yuv(); //clamp camera white balance in YUV mode
+    while(!stop_button()) { // hold down Stop for a long time to quit //
+        if (track_blue() > 0) { // you could make this 0 a much bigger
+            // number, like 80 for example
+            printf("blue found:%d\n", track_confidence);
+        } else
+          if (track_orange() > 0) {
+              printf("orange found:%d\n", track_confidence);
+          } else {
+              beep();
+              printf("nothing...\n");
+          }    
+    } // end while() //
+} // end main() //

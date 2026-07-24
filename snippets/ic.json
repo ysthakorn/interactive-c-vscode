@@ -1,0 +1,196 @@
+{
+  "Motor Forward": {
+    "prefix": "fd",
+    "body": ["fd(${1:motor});"],
+    "description": "Set motor to full speed forward"
+  },
+  "Motor Backward": {
+    "prefix": "bk",
+    "body": ["bk(${1:motor});"],
+    "description": "Set motor to full speed backward"
+  },
+  "Motor Speed": {
+    "prefix": "motor",
+    "body": ["motor(${1:channel}, ${2:speed});"],
+    "description": "Set motor speed (-100 to 100)"
+  },
+  "Motor Off": {
+    "prefix": "off",
+    "body": ["off(${1:motor});"],
+    "description": "Turn off motor (coast)"
+  },
+  "All Motors Off": {
+    "prefix": "ao",
+    "body": ["ao();"],
+    "description": "Turn off all motors"
+  },
+  "Servo Position": {
+    "prefix": "servo",
+    "body": ["servo(${1:channel}, ${2:position});"],
+    "description": "Set servo position (0-255)"
+  },
+  "Read Analog": {
+    "prefix": "analog",
+    "body": ["analog(${1:channel})"],
+    "description": "Read analog sensor (0-255)"
+  },
+  "Read Digital": {
+    "prefix": "digital",
+    "body": ["digital(${1:channel})"],
+    "description": "Read digital input (0 or 1)"
+  },
+  "Sleep Seconds": {
+    "prefix": "sleep",
+    "body": ["sleep(${1:seconds});"],
+    "description": "Pause execution for seconds"
+  },
+  "Sleep Milliseconds": {
+    "prefix": "msleep",
+    "body": ["msleep(${1:milliseconds}L);"],
+    "description": "Pause execution for milliseconds"
+  },
+  "Beep": {
+    "prefix": "beep",
+    "body": ["beep();"],
+    "description": "Play a short beep"
+  },
+  "Play Tone": {
+    "prefix": "tone",
+    "body": ["tone(${1:frequency}, ${2:duration});"],
+    "description": "Play tone at frequency for duration"
+  },
+  "Start Process": {
+    "prefix": "start_process",
+    "body": ["int ${1:pid} = start_process(${2:function_call});"],
+    "description": "Spawn a background process"
+  },
+  "Kill Process": {
+    "prefix": "kill_process",
+    "body": ["kill_process(${1:pid});"],
+    "description": "Terminate a running process"
+  },
+  "Wait for Start": {
+    "prefix": "start_press",
+    "body": ["start_press();"],
+    "description": "Wait for START button press"
+  },
+  "Wait for Stop": {
+    "prefix": "stop_press",
+    "body": ["stop_press();"],
+    "description": "Wait for STOP button press"
+  },
+  "Read Knob": {
+    "prefix": "knob",
+    "body": ["knob()"],
+    "description": "Read potentiometer value (0-255)"
+  },
+  "GP2D120 IR Sensor": {
+    "prefix": "gp2d120",
+    "body": ["gp2d120(${1:channel})"],
+    "description": "Read Sharp GP2D120 IR distance (4-30cm)"
+  },
+  "Ultrasonic Sensor": {
+    "prefix": "ultrasonic",
+    "body": ["ultrasonic(${1:channel})"],
+    "description": "Read ultrasonic distance sensor (cm)"
+  },
+  "ZX-21 Encoder": {
+    "prefix": "zx21",
+    "body": ["zx21_encoder(${1:channel})"],
+    "description": "Read ZX-21 wheel encoder"
+  },
+  "Compass": {
+    "prefix": "compass",
+    "body": ["compass()"],
+    "description": "Read electronic compass heading (0-359)"
+  },
+  "Main Template": {
+    "prefix": "icmain",
+    "body": [
+      "// ${1:Project Name}",
+      "// Interactive C for ${2|AX-11,Handy Board,Sumo11,RCX|}",
+      "",
+      "void main()",
+      "{",
+      "    printf(\"${3:Hello!}\\n\");",
+      "    beep();",
+      "    ",
+      "    ${0:// Your code here}",
+      "}"
+    ],
+    "description": "IC main function template"
+  },
+  "Line Follower Template": {
+    "prefix": "iclinefollower",
+    "body": [
+      "// Line Follower Robot",
+      "// Left sensor on analog(${1:2}), Right sensor on analog(${2:3})",
+      "",
+      "int LEFT_SENSOR = ${1:2};",
+      "int RIGHT_SENSOR = ${2:3};",
+      "int THRESHOLD = ${3:128};",
+      "int SPEED = ${4:80};",
+      "",
+      "void main()",
+      "{",
+      "    printf(\"Line Follower\\n\");",
+      "    start_press();",
+      "    ",
+      "    while (!stop_button()) {",
+      "        int left = analog(LEFT_SENSOR);",
+      "        int right = analog(RIGHT_SENSOR);",
+      "        ",
+      "        if (left > THRESHOLD && right > THRESHOLD) {",
+      "            motor(0, SPEED);",
+      "            motor(1, SPEED);",
+      "        } else if (left > THRESHOLD) {",
+      "            motor(0, SPEED);",
+      "            motor(1, -SPEED/2);",
+      "        } else if (right > THRESHOLD) {",
+      "            motor(0, -SPEED/2);",
+      "            motor(1, SPEED);",
+      "        } else {",
+      "            motor(0, -SPEED/2);",
+      "            motor(1, -SPEED/2);",
+      "        }",
+      "    }",
+      "    ao();",
+      "}"
+    ],
+    "description": "Line follower robot template"
+  },
+  "Obstacle Avoidance Template": {
+    "prefix": "icobstacle",
+    "body": [
+      "// Obstacle Avoidance Robot",
+      "// Using GP2D120 IR sensor on analog(${1:16})",
+      "",
+      "int IR_SENSOR = ${1:16};",
+      "int MIN_DISTANCE = ${2:100};",
+      "int SPEED = ${3:80};",
+      "",
+      "void main()",
+      "{",
+      "    printf(\"Obstacle Avoid\\n\");",
+      "    start_press();",
+      "    ",
+      "    while (!stop_button()) {",
+      "        int dist = gp2d120(IR_SENSOR);",
+      "        ",
+      "        if (dist > MIN_DISTANCE) {",
+      "            // Obstacle detected - turn",
+      "            motor(0, SPEED);",
+      "            motor(1, -SPEED);",
+      "            msleep(500L);",
+      "        } else {",
+      "            // Path clear - go forward",
+      "            motor(0, SPEED);",
+      "            motor(1, SPEED);",
+      "        }",
+      "    }",
+      "    ao();",
+      "}"
+    ],
+    "description": "Obstacle avoidance robot template with GP2D120"
+  }
+}
